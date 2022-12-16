@@ -158,3 +158,6 @@ cython_debug/
 
 # Specific project constraints
 **/data/raw_global_data/
+
+#VScode
+.vscode/
