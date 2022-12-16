@@ -11,6 +11,7 @@ import os
 import numpy as np
 import pandas as pd
 from skelm import ELMRegressor
+from sklearn import linear_model
 
 ### functions definition ####
 
@@ -77,11 +78,54 @@ def generate_dataset(month,key):
     for item in glob:
         glob_data.append(pd.read_csv(item, index_col=0))
     if len(glob_data) > 0:
-        dataset = pd.concat(glob_data, axis=1)
-        dataset.sort_values('year_glvar')
+        if len(glob_data) > 1:
+            ordered = []
+            for i,d in enumerate(glob_data):
+                if i != 0:
+                    # maitein target only for one of the datasets
+                    d = d.drop('target', axis='columns')
+                # sort the values based on the years
+                d = d.sort_values('year_glvar')
+                # drop the column of the years (needed only for orderinf)
+                if i != 0:
+                    d = d.drop('year_glvar', axis='columns')
+                # save old columns name to modify pc1 (common name between multiple dfs)
+                old_columns = list(d.columns)
+                # ientify the index of 'pc1'
+                index_pc1 = old_columns.index('pc1')
+                index_phase = old_columns.index('phase_label')
+                # reference 'pc1' nd change its name
+                old_columns[index_pc1] = f'pc1_{i}'
+                old_columns[index_phase] = f'phase_label_{i}'
+                new_columns = old_columns
+                # assign renamed columns to df
+                d.columns = new_columns
+                # concatenate datasets
+                d = d.reset_index(drop=True)
+                ordered.append(d)
+            dataset = pd.concat(ordered, axis=1)
+            
+            ## only two signal !!!############### no more than two ########
+            conditions = [
+                (dataset['phase_label_0'] == 1) & (dataset['phase_label_1'] == 1),
+                (dataset['phase_label_0'] == 1) & (dataset['phase_label_1'] == 2),
+                (dataset['phase_label_0'] == 2) & (dataset['phase_label_1'] == 1),
+                (dataset['phase_label_0'] == 2) & (dataset['phase_label_1'] == 2)
+                ]
+            choices = [1,2,3,4]
+            
+            dataset['climate_state'] = np.select(conditions, choices)
+            
+            dataset = dataset.drop('phase_label_0', axis='columns')
+            dataset = dataset.drop('phase_label_1', axis='columns')
+            
+        else:
+            dataset = pd.concat(glob_data, axis=1)
+            dataset.sort_values('year_glvar')
     else:
         dataset = pd.DataFrame()
-        target_path = '/Users/francesco/Desktop/Università/Magistrale/Matricola/II_anno/Semestre_II/CLINT_project/Tesi/code/local_data/final_data/tp'
+        #target_path = '/Users/francesco/Desktop/Università/Magistrale/Matricola/II_anno/Semestre_II/CLINT_project/Tesi/code/local_data/final_data/tp'
+        target_path = 'data/local_data/tp'
         if month == '12':
             month_target = '1'
         else:
@@ -123,7 +167,7 @@ def predict(x,Win,Wout):
     return y
     
 
-def LOO_from_dataset(key,data,model_type,hyperparams):
+def LOO_from_dataset(key,data,model_type,hyperparams=None, save_points=False, already_normalized=False, yr=False):
     import pandas as pd
     from sklearn.model_selection import LeaveOneOut
     tf.random.set_seed(3)
@@ -139,16 +183,39 @@ def LOO_from_dataset(key,data,model_type,hyperparams):
     Returns: a list containing the LOO validations errors
     -------
     '''
+
     cols = list(data.columns)
-    if 'year_glvar' in cols:
-        data = data.drop('year_glvar', axis='columns')
-        # BATCH normalization (pc1_pos and pca_neg normaized together)
-        data.loc[:,'pc1']=(data.loc[:,'pc1']-data.loc[:,'pc1'].mean())/data.loc[:,'pc1'].std()
-    if 't2m' in cols:
-        data.loc[:,'t2m']=(data.loc[:,'t2m']-data.loc[:,'t2m'].mean())/data.loc[:,'t2m'].std()
-    if 'tp' in cols:
-        data.loc[:,'tp']=(data.loc[:,'tp']-data.loc[:,'tp'].mean())/data.loc[:,'tp'].std()
     
+    # remove the year of the sample
+    if 'year_glvar' in cols:
+        data = data.sort_values('year_glvar')
+        years = list(data['year_glvar'])
+        data = data.drop('year_glvar', axis='columns')
+     
+    # remove the 'target' string from the column list to avoid normalization of the target
+    cols.remove('target')
+    # remove 'year_glvar' string from the column list because related data has already been removed
+    
+    try:
+        cols.remove('year_glvar')
+    except:
+        years = [i for i in range(1980,2022)]
+    
+    try:
+        cols.remove('phase_label')
+    except:
+        pass
+    
+    try:
+        cols.remove('climate_state')
+    except:
+        pass
+    
+    if already_normalized == False:
+        # normalize alla the cols named in the list
+        for col in cols:
+            if not(data[col].max() == data[col].min() == 0):
+                data.loc[:,col]=(data.loc[:,col]-data.loc[:,col].mean())/data.loc[:,col].std()
     
     
     # shuffle the dataset
@@ -159,6 +226,11 @@ def LOO_from_dataset(key,data,model_type,hyperparams):
     # create a LOO instance
     loo = LeaveOneOut()
     MSEs = []
+    
+    val_true = []
+    val_hat = []
+    
+    
     for train_index, val_index in loo.split(inp):
         #split the dataset
         x_train = inp[train_index]
@@ -223,10 +295,26 @@ def LOO_from_dataset(key,data,model_type,hyperparams):
             
         elif model_type == 'skELM':
             
-            estimator = ELMRegressor(n_neurons=(hyperparams['neuron']),ufunc=('relu'))
+            estimator = ELMRegressor(n_neurons=(hyperparams['neuron']),ufunc=(hyperparams['activation']))
             estimator.fit(x_train, y_train)
             y_hat = estimator.predict(x_val)
             MSEs.append((y_val-y_hat)**2)
+            
+            if save_points == True:
+                
+                val_true.append(float(y_val))
+                val_hat.append(float(y_hat))
+                
+        elif model_type == 'linear':
+            regr = linear_model.LinearRegression()
+            regr.fit(x_train, y_train)
+            y_hat = regr.predict(x_val)
+            MSEs.append((y_val-y_hat)**2)
+            
+            if save_points == True:
+                
+                val_true.append(float(y_val))
+                val_hat.append(float(y_hat))
             
             
         elif model_type == 'torchNN':
@@ -287,10 +375,14 @@ def LOO_from_dataset(key,data,model_type,hyperparams):
     #print( f' \t Dataset { pretty_combo(key) } \tDONE' )
             
     MSEs = np.array(MSEs).mean()
+    
+    if save_points == True and yr == False:
+        return val_true, val_hat
+    
+    if save_points == True and yr == True:
+        return val_true, val_hat, years
         
     return(MSEs)
-
-
 
 
     

@@ -57,10 +57,12 @@ for item in files:
             months_dict[str(month)].append(item)
             
 # definition of local variables
-local_variables = [
-    '/Users/francesco/Desktop/Università/Magistrale/Matricola/II_anno/Semestre_II/CLINT_project/Tesi/code/local_data/final_data/t2m',
-    '/Users/francesco/Desktop/Università/Magistrale/Matricola/II_anno/Semestre_II/CLINT_project/Tesi/code/local_data/final_data/tp'
-    ]
+
+base_path = 'data/local_data/'
+local_variables_names = ['MER','MSSHF','RH','SD','SH','t2m','TCC','TCWV','tp','UW','VW']
+#local_variables_names = ['SD']
+
+local_variables = [base_path+var for var in local_variables_names]
 
 print('Start Combo creation ... \n')
 #creation of a dictionary with keys reporting all the possibe monthly combo 
@@ -68,6 +70,7 @@ print('Start Combo creation ... \n')
 for month in months_dict.keys():
     if len(months_dict[month]) > 0:
         variables = local_variables.copy()
+        
         for dataset in months_dict[month]:
             variables.append(dataset) # testare
         combo = []
@@ -80,7 +83,7 @@ for month in months_dict.keys():
                     for element in combination:
                         if 'csv' in element:
                             c += 1
-                    if c <= 1:
+                    if c <= 2:
                         combo.append(combination)
                         
         keys = []
@@ -95,7 +98,7 @@ for month in months_dict.keys():
         combo = []
         for i in range(len(variables)):
             for combination in itertools.combinations(variables,i+1):
-                if len(combination) > 0:
+                if len(combination) > 0 and len(combination)<=4:
                     combo.append(combination)
         keys = []
         for item in combo:
@@ -109,39 +112,43 @@ for month in months_dict.keys():
     
 print('\nCombo Creation DONE\n')
     
-models = ['skELM','NN']
+models = ['skELM']
 for model in models:
     if (model == 'ELM') or (model == 'skELM'):
         # definition of hyperparameter subsets to search for the best model
-        neurons = [2,3,4,5,6,7,8,9,10,11,12]
+        neurons = [6,7,8,9,10,11,12]
+        #neurons = [2,3,4,5,6,7,8,9,10,11,12]
+        activations = ['relu','sigm']
         for neuron in tqdm(neurons, desc='ELM creation',leave=True):
-            #print(f'\nMODEL:{model}\tHYPERPARAMS:neu-{neuron}\n')
-            for month in months_dict.keys():
-                hyperparams = {
-                    'neuron':neuron
-                    }
+            for activation in activations:
+                #print(f'\nMODEL:{model}\tHYPERPARAMS:neu-{neuron}\n')
+                for month in months_dict.keys():
+                    hyperparams = {
+                        'neuron':neuron,
+                        'activation': activation
+                        }
+                    
+                    #print(f'\nStart month {month} ...')
+                    for combo in months_dict[month].keys():
+                        dataset = generate_dataset(month,combo)
+                        LOO = LOO_from_dataset(combo,dataset,model,hyperparams)
+                        months_dict[month][combo] = LOO
+                    #print(f'Month {month} \tdone\n ')
                 
-                #print(f'\nStart month {month} ...')
-                for combo in months_dict[month].keys():
-                    dataset = generate_dataset(month,combo)
-                    LOO = LOO_from_dataset(combo,dataset,model,hyperparams)
-                    months_dict[month][combo] = LOO
-                #print(f'Month {month} \tdone\n ')
-            
-            df = pd.DataFrame(months_dict)
-            new_index = []
-            for item in df.index:
-                new_index.append(pretty_combo(item))
-            df = df.set_index(pd.Index(new_index))
-            hyper_setting = f'neu-{neuron}'
-            df.to_csv(f'/Users/francesco/Desktop/NeuralNetworks/features_permutation_scores/{model}_{hyper_setting}_scores.csv')
-    
+                df = pd.DataFrame(months_dict)
+                new_index = []
+                for item in df.index:
+                    new_index.append(pretty_combo(item))
+                df = df.set_index(pd.Index(new_index))
+                hyper_setting = f'neu-{neuron}_act-{activation}'
+                df.to_csv(f'/Users/francesco/Desktop/NeuralNetworks/features_permutation_scores/{model}_{hyper_setting}_scores.csv')
+        
     
     elif (model == 'NN') or (model == 'torchNN'):
         #definition of hyperparameter subsets to search for the best model
         neurons = [4,5,6,7]
         #batch_sizes = [1,2,3,4,5]
-        batch_sizes = [1]
+        batch_sizes = [1,2,3,4,5,6]
         learning_rates = [0.01,0.05,0.1]
         activations = ['relu','selu','elu']
         #epochs = [20,25,30,35,40,45,50,55,60,65,70]
