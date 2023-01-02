@@ -71,7 +71,8 @@ gen_strings = []
 for combo in combos:
     gen_string = ''
     variables = combo.split('-')
-    for variable in variables:
+    copy = variables.copy()
+    for variable in copy:
         if '.csv' in variable:
             if variables[variables.index(variable)-3] == 'ENSO':
                 ending_index = variables.index(variable)
@@ -116,7 +117,7 @@ for combo in combos:
 #neurons = [10 for i in range(12)]   
 
 pearson = [[1,0.1],[0.1,1]]
-while pearson[0][1] < 0.60:
+while pearson[0][1] < 0.80:
     tot_hat_elm = []
     tot_true_elm = []
     for month,combo,neuron,activation in zip(months,gen_strings,neurons,activ):

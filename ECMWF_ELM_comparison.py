@@ -73,7 +73,8 @@ gen_strings = []
 for combo in combos:
     gen_string = ''
     variables = combo.split('-')
-    for variable in variables:
+    copy = variables.copy()
+    for variable in copy:
         if '.csv' in variable:
             if variables[variables.index(variable)-3] == 'ENSO':
                 ending_index = variables.index(variable)
