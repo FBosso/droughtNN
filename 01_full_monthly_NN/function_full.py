@@ -8,9 +8,10 @@ Created on Tue Dec 13 17:05:36 2022
 import numpy as np
 import pandas as pd
 import os
+import random
 import xarray as xr
 import tensorflow as tf
-import sklearn as sk
+import sklearn.decomposition as skd
 
 
 def timeseries_from_folder_full(path,startyr,endyr,target=False):
@@ -253,6 +254,22 @@ def north_south_masking(corr_map, data_with_LatLon):
     return corr_map
 
 def area_checking(corr_grid, original_data):
+    '''
+    Parameters
+    ----------
+    corr_grid : TYPE numpy array
+        DESCRIPTION. correlation map
+    original_data : TYPE xarray dataset
+        DESCRIPTION. original dataset (needed to keep the extent of the 
+        not filtered map and generate the conovlution operation to 
+        perform the area check procedure)
+
+    Returns
+    -------
+    int
+        DESCRIPTION. 1 if area check is passed 0 if not
+
+    '''
     
     var = list(original_data.keys())[0]
     #Check area with convolutions
@@ -321,7 +338,7 @@ def perform_pca(train,test):
         DESCRIPTION. first principal component for the test set
     '''
     
-    pca = sk.decomposition.PCA(n_components = 1)
+    pca = skd.PCA(n_components = 1)
     pca.fit_transform(train)
     pc1_train = pca.transform(train)
     pc1_test = pca.transform(test)
@@ -410,6 +427,58 @@ def generate_full_dataset(startyr,endyr,combo,temp_res='monthly',lead=1):
         pass
     
     
+def random_split(local_input, target, limit):
+    '''
+    Parameters
+    ----------
+    local_input : TYPE pandas DataFrame
+        DESCRIPTION. dataframe containing the local variables of the considered combo
+    target : TYPE pandas DataFrame
+        DESCRIPTION. dataframe containing the target of the considered combo
+    limit : TYPE int
+        DESCRIPTION. integer representing the nimber of sampes to consider 
+        for the training set
+
+    Returns
+    -------
+    x_train_loc : TYPE pandas DataFrame
+        DESCRIPTION. shuffled coherent extraction of training input data
+    y_train : TYPE pandas DataFrame
+        DESCRIPTION. shuffled coherent extraction of training target data
+    x_test_loc : pandas DataFrame
+        DESCRIPTION. shuffled coherent extraction of testing input data
+    y_test : TYPE numpy array
+        DESCRIPTION. shuffled coherent extraction of testing target data
+    tot_idx : TYPE numpy array
+        DESCRIPTION. boolean array to select the global data with the 
+        same pattern as the local ones
+    '''
+    
+    #list with number of True equal to the number of training samples
+    train_keep = [True for i in range(limit)]
+    #list with number of False equal to the number of testing samples
+    train_not_keep = [False for i in range(len(target)-limit)]
+    #concatenate the two lists
+    tot_idx = pd.Series(train_keep + train_not_keep)
+    #shuffle the list
+    random.shuffle(tot_idx)
+    #generate opposite list (to select test data)
+    opposite_tot_idx = pd.Series([not idx for idx in tot_idx])
+    
+    #create outputs
+    x_train_loc = local_input[tot_idx.values]
+    y_train = target[tot_idx.values]
+    x_test_loc = local_input[opposite_tot_idx.values]
+    y_test = target[opposite_tot_idx.values]
+    
+    tot_idx = tot_idx.to_numpy()
+    
+    
+    return x_train_loc, y_train, x_test_loc, y_test, tot_idx
+    
+    
+    
+    
 
 def normalize_dataset(dataset):
     '''
@@ -432,8 +501,39 @@ def normalize_dataset(dataset):
         if not(dataset[col].max() == dataset[col].min() == 0):
             dataset.loc[:,col]=(dataset.loc[:,col]-dataset.loc[:,col].mean())/dataset.loc[:,col].std()
             
-    
     return dataset
+
+
+
+def KFold_normalization(training, validation):
+    '''
+    Parameters
+    ----------
+    training : TYPE numpy array
+        DESCRIPTION. training data in form of numpy array
+    validation : TYPE numpy array
+        DESCRIPTION. validation data in form of numpy array
+
+    Returns
+    -------
+    training_norm : TYPE numpy array
+        DESCRIPTION. normalized training set (normalization based on training mean and st_dev)
+    validation_norm : TYPE numpy array
+        DESCRIPTION. normalized validation set (normalization based on training mean and st_dev)
+    '''
+    
+    n_features = training.shape[1]
+    for i in range(n_features):
+        #compute mean and st_dev based on training data
+        mean = training[:,i].mean()
+        st_dev = training[:,i].std()
+        #normalization of training
+        training[:,i] = (training[:,i] - mean) / st_dev
+        #normalization of validation (based on training mean and st_dev)
+        validation[:,i] = (validation[:,i] - mean) / st_dev
+        
+    return training, validation
+    
 
 
 def combo2pretty(combo):
@@ -566,6 +666,22 @@ def gen_signals(gen_string):
                 sig = sig + '%' + path
                 
     return sig
+
+
+def model_builder(hp):
+    
+    from tensorflow import keras
+    
+    model = keras.Sequential()
+    model.add(keras.layers.Dense(
+        hp.Choice('units',[10,15,20,25,30]),
+        activation=hp.Choice('activation',['sigmoid','relu'])
+        ))
+    model.add(keras.layers.Dense(1))
+    model.compile(optimizer = keras.optimizers.Adam(hp.Choice('learning_rate',[0.001,0.01,0.1])),
+                  loss = keras.losses.MeanSquaredError())
+    
+    return model
             
     
     
