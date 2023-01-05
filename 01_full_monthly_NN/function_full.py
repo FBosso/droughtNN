@@ -542,7 +542,7 @@ def random_split(local_input, target, limit, even_test=False):
         x_train_loc = local_input[boolean_pattern]
         y_train = target[boolean_pattern]
         x_test_loc = local_input[opposite_boolean_pattern]
-        y_test = local_input[opposite_boolean_pattern]
+        y_test = target[opposite_boolean_pattern]
         
         return x_train_loc, y_train, x_test_loc, y_test, boolean_pattern
     
