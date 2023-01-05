@@ -49,7 +49,7 @@ for combo in combos:
     sign_gen = gen_signals(gen_str)
     ###LOCAL###
     #generate the local dataset (timeseries data)
-    dataset = generate_full_dataset(startyr, endyr, local_gen, lead=1)
+    dataset = generate_full_dataset(startyr, endyr, local_gen, lead=1, month_label = True)
     #load and concatenate the climate signals (if present)
     if sign_gen != '':
         sign_dataset = generate_full_dataset(startyr, endyr, sign_gen, lead=1)
@@ -63,7 +63,7 @@ for combo in combos:
     limit = round(len(inp_loc_data)*percentage_train)
     
     #randomly divide training and testing data (to avoid to keep sequences)
-    x_train_loc, y_train, x_test_loc, y_test, train_boolean_labels = random_split(inp_loc_data, target, limit)
+    x_train_loc, y_train, x_test_loc, y_test, train_boolean_labels = random_split(inp_loc_data, target, limit, even_test=True)
     test_boolean_labels = np.array([not item for item in train_boolean_labels])
     
     '''

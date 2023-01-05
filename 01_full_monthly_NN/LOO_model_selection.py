@@ -6,7 +6,7 @@ Created on Mon Jan  2 14:53:06 2023
 @author: francesco
 """
 
-from function_full import normalize_dataset, KFold_normalization
+from function_full import normalize_dataset, training_based_normalization
 from sklearn.model_selection import KFold
 import tensorflow as tf
 import pandas as pd
@@ -69,7 +69,7 @@ for epoch in epochs:
                                 validation_data_y = train_y[validation_index]
                                 
                                 #normalize the dataset (training and validation separately)
-                                norm_training_data_x, norm_validation_data_x = KFold_normalization(training_data_x, validation_data_x)
+                                norm_training_data_x, norm_validation_data_x = training_based_normalization(training_data_x, validation_data_x)
         
                                 #create the configuration of the neural network
                                 inputs = tf.keras.layers.Input(shape=(train_x.shape[1],))

@@ -14,7 +14,7 @@ import tensorflow as tf
 import sklearn.decomposition as skd
 
 
-def timeseries_from_folder_full(path,startyr,endyr,target=False):
+def timeseries_from_folder_full(path,startyr,endyr,i=1,target=False,month_label=False):
     '''
     Parameters
     ----------
@@ -22,6 +22,12 @@ def timeseries_from_folder_full(path,startyr,endyr,target=False):
         DESCRIPTION. path of the folder where all the LOCAL (timeseries) data is stored
     startyr : TYPE int
         DESCRIPTION. start year to build the timeserie
+    i : TYPE int
+        DESCRIPTION. represents if it is the first variable added to the dataset 
+        that is under construction or not. If it is the first (i = 0) and 
+        month_label is True, then the column related to the month is added. 
+        Otherwise not. This is done in order to avoid to have more than one 
+        "month" column in the same dataset
     endyr : TYPE int
         DESCRIPTION. end year to build the timeserie
     target : TYPE boolean
@@ -41,10 +47,22 @@ def timeseries_from_folder_full(path,startyr,endyr,target=False):
     data = []
     for file in files:
         if (int(file.split('-')[0]) >= startyr) and (int(file.split('-')[0]) <= endyr):
-            data.append(float(np.load(path+'/'+file)))
+            
+            if month_label == True and i==0:
+                #extraxt the month of the sample from the filename (needed to test month by month)
+                month = file.split('-')[1].split('_')[0]
+                data.append([month,float(np.load(path+'/'+file))])
+            else:
+                data.append(float(np.load(path+'/'+file)))
+                
     var_name = path.split('/')[-1]
     if target == False:
-        df = pd.DataFrame(data,columns=[var_name])
+        
+        if month_label == True and i == 0:
+            df = pd.DataFrame(data,columns=['month',var_name])
+        else:
+            df = pd.DataFrame(data,columns=[var_name])
+            
     elif target == True:
         df = pd.DataFrame(data,columns=['target'])
     
@@ -380,7 +398,7 @@ def global_local_corr(X,y):
             
 
 
-def generate_full_dataset(startyr,endyr,combo,temp_res='monthly',lead=1):
+def generate_full_dataset(startyr,endyr,combo,temp_res='monthly',lead=1, month_label = False):
     '''
     Parameters
     ----------
@@ -392,6 +410,10 @@ def generate_full_dataset(startyr,endyr,combo,temp_res='monthly',lead=1):
         DESCRIPTION. string containing all the input variables path separated by '%'
     temp_res : TYPE string ['monthly' or 'daily']
         DESCRIPTION. string that indicate if the temporal resolution ofthe dataset has to be daily of monthly
+    month_label : TYPE boolean
+        DESCRIPTION. boolean value to indicate if the output dataset must have a column representing the month 
+        of the specific sample (to test the different algorithms month by months we need to know which samples 
+        belong to which month)
 
     Returns a pandas dataframe representing the dataset (with variables and targhet)
     -------
@@ -405,8 +427,9 @@ def generate_full_dataset(startyr,endyr,combo,temp_res='monthly',lead=1):
     if temp_res == 'monthly':
         inp_variables = combo.split('%')
         timeseries = []
-        for item in inp_variables:
-            data = timeseries_from_folder_full(item,startyr,endyr)
+        for i,item in enumerate(inp_variables):
+            iteration = i
+            data = timeseries_from_folder_full(item,startyr,endyr,iteration, month_label = month_label)
             timeseries.append(data)
             
         inp = pd.concat(timeseries, axis=1)
@@ -427,7 +450,7 @@ def generate_full_dataset(startyr,endyr,combo,temp_res='monthly',lead=1):
         pass
     
     
-def random_split(local_input, target, limit):
+def random_split(local_input, target, limit, even_test=False):
     '''
     Parameters
     ----------
@@ -438,6 +461,9 @@ def random_split(local_input, target, limit):
     limit : TYPE int
         DESCRIPTION. integer representing the nimber of sampes to consider 
         for the training set
+    even_test : TYPE boolean
+        DESCRIPTION. boolean representing if the test set have to be equally distributed 
+        over all the 12 months (same number of randomly extracted test samples for each month)
 
     Returns
     -------
@@ -454,29 +480,71 @@ def random_split(local_input, target, limit):
         same pattern as the local ones
     '''
     
-    #list with number of True equal to the number of training samples
-    train_keep = [True for i in range(limit)]
-    #list with number of False equal to the number of testing samples
-    train_not_keep = [False for i in range(len(target)-limit)]
-    #concatenate the two lists
-    tot_idx = pd.Series(train_keep + train_not_keep)
-    #shuffle the list
-    random.shuffle(tot_idx)
-    #generate opposite list (to select test data)
-    opposite_tot_idx = pd.Series([not idx for idx in tot_idx])
+    if even_test == False:
     
-    #create outputs
-    x_train_loc = local_input[tot_idx.values]
-    y_train = target[tot_idx.values]
-    x_test_loc = local_input[opposite_tot_idx.values]
-    y_test = target[opposite_tot_idx.values]
+        #list with number of True equal to the number of training samples
+        train_keep = [True for i in range(limit)]
+        #list with number of False equal to the number of testing samples
+        train_not_keep = [False for i in range(len(target)-limit)]
+        #concatenate the two lists
+        tot_idx = pd.Series(train_keep + train_not_keep)
+        #shuffle the list
+        random.shuffle(tot_idx)
+        #generate opposite list (to select test data)
+        opposite_tot_idx = pd.Series([not idx for idx in tot_idx])
+        
+        #create outputs
+        x_train_loc = local_input[tot_idx.values]
+        y_train = target[tot_idx.values]
+        x_test_loc = local_input[opposite_tot_idx.values]
+        y_test = target[opposite_tot_idx.values]
+        
+        tot_idx = tot_idx.to_numpy()
+        
+        
+        return x_train_loc, y_train, x_test_loc, y_test, tot_idx
     
-    tot_idx = tot_idx.to_numpy()
-    
-    
-    return x_train_loc, y_train, x_test_loc, y_test, tot_idx
-    
-    
+    elif even_test == True:
+        
+        #adjust limit value to produce a test set that can be eavenly divided on the 12 months
+        #we want to test the models month by month (same number of test samples)
+        while (len(target)-limit)%12 != 0:
+            #conservative choice, we increment the number of test samples until we reach a number that can be divided by 12
+            limit = limit - 1
+        #
+        test_per_month = (len(target)-limit)/12
+        #declare list of months
+        months = ['01','02','03','04','05','06','07','08','09','10','11','12']
+        idx_test = np.array([])
+        for month in months:
+            #extract the samples of the specific month
+            df_month = local_input.loc[local_input['month'] == month].copy()
+            #make the index as a new column
+            index = list(df_month.index)
+            df_month['index'] = index
+            #extract the test samples for the specific month
+            samples = df_month.sample(n=int(test_per_month))
+            #extract the indexes of the samples
+            indexes = samples['index'].to_numpy()
+            #concatenate arrays
+            idx_test = np.concatenate([idx_test,indexes])
+            
+        idx_test = idx_test.astype(int)
+        boolean_pattern = [True for i in range(len(target))]
+        replacements = [False for i in range(len(idx_test))]
+        
+        for (index, replacement) in zip(idx_test, replacements):
+            boolean_pattern[index] = replacement
+        
+            opposite_boolean_pattern = [not idx for idx in boolean_pattern]
+        
+        #create outputs    
+        x_train_loc = local_input[boolean_pattern]
+        y_train = target[boolean_pattern]
+        x_test_loc = local_input[opposite_boolean_pattern]
+        y_test = local_input[opposite_boolean_pattern]
+        
+        return x_train_loc, y_train, x_test_loc, y_test, boolean_pattern
     
     
 
@@ -495,7 +563,10 @@ def normalize_dataset(dataset):
 
     '''
     columns = list(dataset.columns)
-    columns.remove('target')
+    try:
+        columns.remove('target')
+    except:
+        pass
     
     for col in columns:
         if not(dataset[col].max() == dataset[col].min() == 0):
@@ -505,20 +576,20 @@ def normalize_dataset(dataset):
 
 
 
-def KFold_normalization(training, validation):
+def training_based_normalization(training, val_or_test):
     '''
     Parameters
     ----------
     training : TYPE numpy array
         DESCRIPTION. training data in form of numpy array
-    validation : TYPE numpy array
-        DESCRIPTION. validation data in form of numpy array
+    val_or_test : TYPE numpy array
+        DESCRIPTION. validation or test data in form of numpy array
 
     Returns
     -------
-    training_norm : TYPE numpy array
+    training: TYPE numpy array
         DESCRIPTION. normalized training set (normalization based on training mean and st_dev)
-    validation_norm : TYPE numpy array
+    val_or_test : TYPE numpy array
         DESCRIPTION. normalized validation set (normalization based on training mean and st_dev)
     '''
     
@@ -530,9 +601,9 @@ def KFold_normalization(training, validation):
         #normalization of training
         training[:,i] = (training[:,i] - mean) / st_dev
         #normalization of validation (based on training mean and st_dev)
-        validation[:,i] = (validation[:,i] - mean) / st_dev
+        val_or_test[:,i] = (val_or_test[:,i] - mean) / st_dev
         
-    return training, validation
+    return training, val_or_test
     
 
 
@@ -667,21 +738,6 @@ def gen_signals(gen_string):
                 
     return sig
 
-
-def model_builder(hp):
-    
-    from tensorflow import keras
-    
-    model = keras.Sequential()
-    model.add(keras.layers.Dense(
-        hp.Choice('units',[10,15,20,25,30]),
-        activation=hp.Choice('activation',['sigmoid','relu'])
-        ))
-    model.add(keras.layers.Dense(1))
-    model.compile(optimizer = keras.optimizers.Adam(hp.Choice('learning_rate',[0.001,0.01,0.1])),
-                  loss = keras.losses.MeanSquaredError())
-    
-    return model
             
     
     
