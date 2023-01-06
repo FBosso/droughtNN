@@ -43,7 +43,7 @@ for i in range(5,11):
         combos.append(combination)
     
 ##just to save computation (the combos until 8546 hava already been generated)##       
-combos = combos[8547:]
+#combos = combos[8547:]
 ################################################################################
         
 for combo in tqdm(combos, desc='Datasets creation',leave=True):
