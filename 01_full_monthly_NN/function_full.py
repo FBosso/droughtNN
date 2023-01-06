@@ -330,8 +330,9 @@ def filtering_conditions(corr_map,timeseries_len,min_corr,original_data):
     sign_level_filtered = significance_level_filtering(corr_map, timeseries_len)
     #it works only if NaN values are founded, it will not affect variables that are not SST (or similar)
     land_masked = land_masking(sign_level_filtered)
-    corr_theshold_filtered = correlation_threshold_filtering(land_masked, min_corr)
-    north_south_masked = north_south_masking(corr_theshold_filtered, original_data)
+    #corr_theshold_filtered = correlation_threshold_filtering(land_masked, min_corr)
+    corr_threshold_filtered = land_masked
+    north_south_masked = north_south_masking(corr_threshold_filtered, original_data)
     area_checked = area_checking(north_south_masked, original_data)    
     
     return north_south_masked, area_checked
