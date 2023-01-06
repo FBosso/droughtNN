@@ -114,7 +114,7 @@ __pypackages__/
 __pycache__/
 
 #macOS
-.DS_Store/
+.DS_Store
 
 # Celery stuff
 celerybeat-schedule
