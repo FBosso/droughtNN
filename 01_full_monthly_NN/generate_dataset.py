@@ -6,10 +6,12 @@ Created on Tue Dec 13 17:01:23 2022
 @author: francesco
 """
 import os
-import tensorflow as tf
+import tensorflow as tf #
 import pandas as pd
 import numpy as np
 import itertools
+import xarray as xr
+from tqdm import tqdm
 from function_full import generate_full_dataset, normalize_dataset, combo2pretty, gen2gens, global_timeseries_from_folder_full, adjust_global_data, global_local_corr, filtering_conditions, reshape_mask2PCA, perform_pca, gen_signals, random_split
 
 #define starting and ending years of the datasets
@@ -22,7 +24,7 @@ min_corr = 0.1
 
 
 local_base_path = '../data/local_data/'
-global_base_path = '../data/raw_global_data/'
+global_base_path = '../data/raw_global_data/lead_1_presaved/'
 signal_base_path = '../data/climate_signals/'
 
 local_vars = ['MER','MSSHF','RH','SD','SH','t2m','TCC','TCWV','tp','UW','VW']
@@ -40,7 +42,7 @@ for i in range(5,11):
     for combination in itertools.combinations(paths,i):
         combos.append(combination)
         
-for combo in combos:
+for combo in tqdm(combos, desc='Datasets creation',leave=True):
     #define the generating string
     gen_str = '%'.join(combo)
     
@@ -48,13 +50,22 @@ for combo in combos:
     local_gen, global_gen = gen2gens(gen_str)
     sign_gen = gen_signals(gen_str)
     ###LOCAL###
-    #generate the local dataset (timeseries data)
-    dataset = generate_full_dataset(startyr, endyr, local_gen, lead=1, month_label = True)
+    if local_gen != '':
+        #generate the local dataset (timeseries data)
+        dataset = generate_full_dataset(startyr, endyr, local_gen, lead=1, month_label = True)
     #load and concatenate the climate signals (if present)
     if sign_gen != '':
-        sign_dataset = generate_full_dataset(startyr, endyr, sign_gen, lead=1)
-        sign_dataset = sign_dataset.drop(['target'], axis=1)
-        dataset = pd.concat([dataset,sign_dataset], axis=1)
+        
+        if local_gen != '':
+            sign_dataset = generate_full_dataset(startyr, endyr, sign_gen, lead=1)
+            sign_dataset = sign_dataset.drop(['target'], axis=1)
+            dataset = pd.concat([dataset,sign_dataset], axis=1)
+            
+        elif local_gen == '':
+            #no need to remove target because, since there is no local_gen, it is not going to be a duplicate
+            dataset = generate_full_dataset(startyr, endyr, sign_gen, lead=1, month_label = True)
+            
+            
     #split local data and target
     cols = list(dataset.columns)
     cols.remove('target')
@@ -80,11 +91,22 @@ for combo in combos:
         for item in global_gen.split('%'):
             #detect variable name
             name = item.split('/')[-1]
+            '''
+            #################### 1) online data processing ####################
             #generate the global dataset (gridded data)
             var = global_timeseries_from_folder_full(item,startyr,endyr,lead=1)
+            
             #adjust the global data (no normalization because it will be done on the PC1)
             adjusted_var, original_dataset = adjust_global_data(var, subtract_mean=True)
             #split training and testing (both for GLOBAL and LOCAL)
+            ###################################################################
+            '''
+            #################### 2) exploit presaved data #####################
+            original_dataset = xr.open_dataset(f'{item}.nc', engine='netcdf4')
+            adjusted_var = xr.open_dataset(f'{item}_adjusted.nc', engine='netcdf4')
+            name = list(adjusted_var.keys())[0]
+            adjusted_var = adjusted_var[name]
+            ###################################################################
             
             ###### GLOBA DATA ######
             x_train_glob = adjusted_var.data[train_boolean_labels,:,:]
@@ -97,12 +119,14 @@ for combo in combos:
             #reshape maps into matrix (rows --> time, cols --> pixels)
             x_train_glob_reshaped = reshape_mask2PCA(x_train_glob, mask.mask)
             x_test_glob_reshaped = reshape_mask2PCA(x_test_glob, mask.mask)
-            #preform the PCA the training dataset and project the test set in the same space
+            #preform the PCA on the training dataset and project the test set in the same space
             train_pc1, test_pc1 = perform_pca(x_train_glob_reshaped, x_test_glob_reshaped)
             
             #add the global variable to the training set
+            x_train_loc = x_train_loc.copy()
             x_train_loc[name] = train_pc1
             #add the global variable to the test set
+            x_test_loc = x_test_loc.copy()
             x_test_loc[name] = test_pc1
     
     #create the dataset ID
