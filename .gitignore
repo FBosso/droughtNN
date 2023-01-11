@@ -158,6 +158,12 @@ cython_debug/
 
 # Specific project constraints
 **/data/raw_global_data/
+**/data/local_data_daily/
+**/01_full_monthly_NN/datasets/
 
 #VScode
 .vscode/
+
+#specific
+
+

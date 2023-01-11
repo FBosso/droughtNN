@@ -12,7 +12,6 @@ import pandas as pd
 import os
 import matplotlib.pyplot as plt
 from function_full import normalize_dataset, training_based_normalization
-from tqdm import tqdm
 
 
 
@@ -27,7 +26,7 @@ except:
     pass
 
 #iterate on all the folders containinf the training and testing sets
-for folder in tqdm(folders, desc='Model training'):
+for folder in folders:
     
     #load the training set and the target
     train_x = pd.read_csv(base_path+folder+f'/x_train_{folder}', index_col=0)
@@ -81,7 +80,7 @@ for folder in tqdm(folders, desc='Model training'):
                          directory='tuner_trials/1_layer',
                          project_name=folder)
     
-    stop_early = tf.keras.callbacks.EarlyStopping(monitor='val_loss', patience=5)
+    stop_early = tf.keras.callbacks.EarlyStopping(monitor='val_loss', patience=3)
     tuner1.search(x_train,y_train, epochs=50, validation_data=(x_val,y_val), callbacks=[stop_early])
     
     

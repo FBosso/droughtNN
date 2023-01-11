@@ -23,53 +23,40 @@ percentage_train = 0.8
 min_corr = 0.0
 
 
-local_base_path = '../data/local_data/'
-global_base_path = '../data/raw_global_data/lead_1_presaved/'
-signal_base_path = '../data/climate_signals/'
+local_base_path = '../data/local_data_daily/'
+global_base_path = '../data/raw_global_data/'
 
 local_vars = ['MER','MSSHF','RH','SD','SH','t2m','TCC','TCWV','tp','UW','VW']
 global_vars = ['MSLP','SST','Z500']
-signal_vars = ['EA','SCA','NAO','ENSO']
 
 local_paths = [local_base_path+var for var in local_vars]
 global_paths = [global_base_path+var for var in global_vars]
-signal_paths = [signal_base_path+var for var in signal_vars]
 
-paths = local_paths + global_paths + signal_paths
+paths = local_paths + global_paths
 
 combos = []
 for i in range(5,11):
     for combination in itertools.combinations(paths,i):
         combos.append(combination)
-    
-##just to save computation (the combos until 8546 hava already been generated)##       
-combos = combos[11943:]
-################################################################################
         
 for combo in tqdm(combos, desc='Datasets creation',leave=True):
+    
+    combo = ('../data/local_data_daily/MER',
+     '../data/local_data_daily/MSSHF',
+     '../data/local_data_daily/RH',
+     '../data/local_data_daily/SD',
+     '../data/raw_global_data/MSLP')
+    
     #define the generating string
     gen_str = '%'.join(combo)
     
     #separate the generating string in 2 generating strings one for local data and one for global data
     local_gen, global_gen = gen2gens(gen_str)
-    sign_gen = gen_signals(gen_str)
     ###LOCAL###
     if local_gen != '':
         #generate the local dataset (timeseries data)
-        dataset = generate_full_dataset(startyr, endyr, local_gen, lead=1, month_label = True)
-    #load and concatenate the climate signals (if present)
-    if sign_gen != '':
-        
-        if local_gen != '':
-            sign_dataset = generate_full_dataset(startyr, endyr, sign_gen, lead=1)
-            sign_dataset = sign_dataset.drop(['target'], axis=1)
-            dataset = pd.concat([dataset,sign_dataset], axis=1)
-            
-        elif local_gen == '':
-            #no need to remove target because, since there is no local_gen, it is not going to be a duplicate
-            dataset = generate_full_dataset(startyr, endyr, sign_gen, lead=1, month_label = True)
-            
-            
+        dataset = generate_full_dataset(startyr, endyr, local_gen, lead=30, month_label = True, temp_res = 'moving_monthly_avg')
+   
     #split local data and target
     cols = list(dataset.columns)
     cols.remove('target')
@@ -81,24 +68,14 @@ for combo in tqdm(combos, desc='Datasets creation',leave=True):
     x_train_loc, y_train, x_test_loc, y_test, train_boolean_labels = random_split(inp_loc_data, target, limit, even_test=True)
     test_boolean_labels = np.array([not item for item in train_boolean_labels])
     
-    '''
-    ###### LOCAL DATA ######
-    ##select the training data
-    x_train_loc = inp_loc_data.iloc[:limit,:]
-    y_train = target.iloc[:limit]
-    ##select the testing data
-    x_test_loc = inp_loc_data.iloc[limit:,:]
-    y_test = target.iloc[limit:]
-    '''
-    
     if global_gen != '':
         for item in global_gen.split('%'):
             #detect variable name
             name = item.split('/')[-1]
-            '''
+            
             #################### 1) online data processing ####################
             #generate the global dataset (gridded data)
-            var = global_timeseries_from_folder_full(item,startyr,endyr,lead=1)
+            var = global_timeseries_from_folder_full(item,startyr,endyr,lead=30)
             
             #adjust the global data (no normalization because it will be done on the PC1)
             adjusted_var, original_dataset = adjust_global_data(var, subtract_mean=True)
@@ -111,7 +88,7 @@ for combo in tqdm(combos, desc='Datasets creation',leave=True):
             name = list(adjusted_var.keys())[0]
             adjusted_var = adjusted_var[name]
             ###################################################################
-            
+            '''
             ###### GLOBA DATA ######
             x_train_glob = adjusted_var.data[train_boolean_labels,:,:]
             x_test_glob = adjusted_var.data[test_boolean_labels,:,:]
@@ -147,57 +124,3 @@ for combo in tqdm(combos, desc='Datasets creation',leave=True):
     x_test_loc.to_csv(f'datasets/{pretty}/x_test_{pretty}')
     y_test.to_csv(f'datasets/{pretty}/y_test_{pretty}')
     
-    
-    '''
-    
-    #divide the dataset in train and test and save the test
-    #shuffle the dataset
-    dataset = dataset.sample(frac=1,random_state=1)
-    #convert dataframe into numpy arrays
-    inp = dataset.drop('target', axis='columns').to_numpy()
-    out = dataset.loc[:,'target'].to_numpy()
-    #define the percentage of training and testing
-    percentage_train = 0.8
-    limit = round(len(inp)*percentage_train)
-    #select the training data
-    x_train = inp[:limit]
-    y_train = out[:limit]
-    #select the testing data
-    x_test = inp[limit:]
-    y_test = out[limit:]
-    #save the testing data with the proper name
-    pretty = combo2pretty(test_combo)
-    np.save(f'../data/test_sets_full/x_test_{pretty}',x_test)
-    np.save(f'../data/test_sets_full/y_test_{pretty}',y_test)
-    
-    #separate the training set in two vectros for Local and Global variables
-    loc, glob = divide_data(x_train)
-    #compute the correlation map between global data and target
-    corr_map = global_target_corr(loc, glob)
-    #apply the filtering conditions to the just obtained correlation map and obtain the mask
-    global_mask = filtering_conditions(corr_map)
-    #apply the just obtained mask to the training data
-    
-    #read the testing data and apply the same mask to the testing data
-    
-    #re-save the masked testing data
-    
-    #create the configuration of the neural network
-    inputs = tf.keras.layers.Input(shape=(3,))
-    x = tf.keras.layers.Dense(10,activation='relu')(inputs)
-    x = tf.keras.layers.Dense(10,activation='relu')(x)
-    x = tf.keras.layers.Dense(10,activation='relu')(x)
-    outputs = tf.keras.layers.Dense(1)(x)
-    #define the model based on the defined inputs and outpupt
-    model = tf.keras.Model(inputs=inputs, outputs=outputs, name='Test')
-    #define optimizer and loss function
-    optimizer = tf.keras.optimizers.Adam()
-    loss = tf.keras.losses.MSE
-    #compile the model
-    model.compile(optimizer=optimizer, loss=loss)
-    #show the model summary (how much layers, how much neurons per layers,...)
-    model.summary()
-    #train the neural network
-    report = model.fit(x_train,y_train,batch_size=1,epochs=20)
-    
-    '''
