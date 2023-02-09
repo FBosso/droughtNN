@@ -13,11 +13,12 @@ import os
 import matplotlib.pyplot as plt
 from function_full import normalize_dataset, training_based_normalization
 from tqdm import tqdm
+import numpy as np
 
 
 
 #define datasets base path
-base_path = 'datasets/'
+base_path = 'datasets_no_SD/'
 #detect available folders
 folders = os.listdir(base_path)
 #remove unwanted filenames
@@ -51,7 +52,10 @@ for folder in tqdm(folders, desc='Model training'):
     x_val = train_x[limit:,:]
     y_val = train_y[limit:,:]
     #normalize training and validation based on mean and std only of the training
-    x_train, x_val = training_based_normalization(x_train, x_val)
+    x_train, x_val, means, stds = training_based_normalization(x_train, x_val)
+    #save means and stds to reproduce normalization
+    np.save(base_path+folder+f'/means_{folder}', means)
+    np.save(base_path+folder+f'/stds_{folder}', stds)
     #identify number of features of the current dataset
     cols = train_x.shape[1]
     
@@ -61,7 +65,7 @@ for folder in tqdm(folders, desc='Model training'):
         model.add(tf.keras.layers.Input(shape=(cols,)))
         
         hp_activation = hp.Choice('activation', values=['relu','sigmoid'])
-        hp_layer_1 = hp.Int('layer_1', min_value=1, max_value=30, step=1)
+        hp_layer_1 = hp.Int('layer_1', min_value=5, max_value=30, step=1)
         hp_learning_rate = hp.Choice('learning_rate', values=[0.001,0.01,0.1])
         
         model.add(tf.keras.layers.Dense(units=hp_layer_1, activation=hp_activation))
@@ -76,18 +80,18 @@ for folder in tqdm(folders, desc='Model training'):
 
     tuner1 = kt.Hyperband(model_builder_1layer,
                          objective='val_loss',
-                         max_epochs = 50,
+                         max_epochs = 150,
                          factor=3,
                          directory='tuner_trials/1_layer',
                          project_name=folder)
     
-    stop_early = tf.keras.callbacks.EarlyStopping(monitor='val_loss', patience=5)
-    tuner1.search(x_train,y_train, epochs=50, validation_data=(x_val,y_val), callbacks=[stop_early])
+    stop_early = tf.keras.callbacks.EarlyStopping(monitor='val_loss', patience=10)
+    tuner1.search(x_train,y_train, epochs=150, validation_data=(x_val,y_val), callbacks=[stop_early])
     
     
     best_hps = tuner1.get_best_hyperparameters(1)[0]
     model = tuner1.hypermodel.build(best_hps)
-    report = model.fit(x_train,y_train, epochs=50, validation_data=(x_val,y_val), callbacks=[stop_early])
+    report = model.fit(x_train,y_train, epochs=150, validation_data=(x_val,y_val), callbacks=[stop_early])
     loss = pd.DataFrame(report.history)
     loss.plot()
     plt.show()
@@ -99,7 +103,7 @@ for folder in tqdm(folders, desc='Model training'):
     model.save(f'tuner_trials/1_layer/best/{folder}/model')
     
     
-    
+    os.rename(base_path+folder, f'done/{folder}')
     
     
     '''
@@ -110,8 +114,8 @@ for folder in tqdm(folders, desc='Model training'):
         model.add(tf.keras.layers.Input(shape=(cols,)))
         
         hp_activation = hp.Choice('activation', values=['relu','sigmoid'])
-        hp_layer_1 = hp.Int('layer_1', min_value=1, max_value=30, step=1)
-        hp_layer_2 = hp.Int('layer_2', min_value=1, max_value=30, step=1)
+        hp_layer_1 = hp.Int('layer_1', min_value=5, max_value=30, step=1)
+        hp_layer_2 = hp.Int('layer_2', min_value=5, max_value=30, step=1)
         hp_learning_rate = hp.Choice('learning_rate', values=[0.001,0.01,0.1])
         
         model.add(tf.keras.layers.Dense(units=hp_layer_1, activation=hp_activation))

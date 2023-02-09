@@ -11,12 +11,13 @@ import keras_tuner as kt
 import pandas as pd
 import os
 import matplotlib.pyplot as plt
+import numpy as np
 from function_full import normalize_dataset, training_based_normalization
 
 
 
 #define datasets base path
-base_path = 'datasets/'
+base_path = 'datasets_no_SD/'
 #detect available folders
 folders = os.listdir(base_path)
 #remove unwanted filenames
@@ -32,7 +33,7 @@ for folder in folders:
     train_x = pd.read_csv(base_path+folder+f'/x_train_{folder}', index_col=0)
     train_y = pd.read_csv(base_path+folder+f'/y_train_{folder}', index_col=0)
     #drop "month" column from x dataset
-    train_x = train_x.drop(columns=['month'])
+    train_x = train_x.drop(columns=['beginning_month', 'beginning_day'])
     #concatenate input and targets to allow coherent shuffilng
     data = pd.concat([train_x,train_y], axis=1)
     #shuffle training set
@@ -50,9 +51,15 @@ for folder in folders:
     x_val = train_x[limit:,:]
     y_val = train_y[limit:,:]
     #normalize training and validation based on mean and std only of the training
-    x_train, x_val = training_based_normalization(x_train, x_val)
+    x_train, x_val, means, stds = training_based_normalization(x_train, x_val)
+    #save means and stds to reproduce normalization
+    np.save(base_path+folder+f'/means_{folder}', means)
+    np.save(base_path+folder+f'/stds_{folder}', stds)
     #identify number of features of the current dataset
     cols = train_x.shape[1]
+    
+    
+    '''
     
     def model_builder_1layer(hp):
         
@@ -60,7 +67,7 @@ for folder in folders:
         model.add(tf.keras.layers.Input(shape=(cols,)))
         
         hp_activation = hp.Choice('activation', values=['relu','sigmoid'])
-        hp_layer_1 = hp.Int('layer_1', min_value=1, max_value=30, step=1)
+        hp_layer_1 = hp.Int('layer_1', min_value=5, max_value=30, step=1)
         hp_learning_rate = hp.Choice('learning_rate', values=[0.001,0.01,0.1])
         
         model.add(tf.keras.layers.Dense(units=hp_layer_1, activation=hp_activation))
@@ -80,13 +87,13 @@ for folder in folders:
                          directory='tuner_trials/1_layer',
                          project_name=folder)
     
-    stop_early = tf.keras.callbacks.EarlyStopping(monitor='val_loss', patience=3)
-    tuner1.search(x_train,y_train, epochs=50, validation_data=(x_val,y_val), callbacks=[stop_early])
+    stop_early = tf.keras.callbacks.EarlyStopping(monitor='val_loss', patience=10)
+    tuner1.search(x_train,y_train, epochs=200, validation_data=(x_val,y_val), callbacks=[stop_early])
     
     
     best_hps = tuner1.get_best_hyperparameters(1)[0]
     model = tuner1.hypermodel.build(best_hps)
-    report = model.fit(x_train,y_train, epochs=50, validation_data=(x_val,y_val), callbacks=[stop_early])
+    report = model.fit(x_train,y_train, epochs=200, validation_data=(x_val,y_val), callbacks=[stop_early])
     loss = pd.DataFrame(report.history)
     loss.plot()
     plt.show()
@@ -109,8 +116,8 @@ for folder in folders:
         model.add(tf.keras.layers.Input(shape=(cols,)))
         
         hp_activation = hp.Choice('activation', values=['relu','sigmoid'])
-        hp_layer_1 = hp.Int('layer_1', min_value=1, max_value=30, step=1)
-        hp_layer_2 = hp.Int('layer_2', min_value=1, max_value=30, step=1)
+        hp_layer_1 = hp.Int('layer_1', min_value=5, max_value=30, step=1)
+        hp_layer_2 = hp.Int('layer_2', min_value=5, max_value=30, step=1)
         hp_learning_rate = hp.Choice('learning_rate', values=[0.001,0.01,0.1])
         
         model.add(tf.keras.layers.Dense(units=hp_layer_1, activation=hp_activation))
@@ -124,29 +131,32 @@ for folder in folders:
         return model
     
     
-    tuner2 = kt.Hyperband(model_builder_1layer,
+    tuner2 = kt.Hyperband(model_builder_2layer,
                          objective='val_loss',
-                         max_epochs = 100,
+                         max_epochs = 200,
                          factor=3,
-                         directory='tuner_trials/1_layer',
+                         directory='tuner_trials/2_layer',
                          project_name=folder)
     
-    stop_early = tf.keras.callbacks.EarlyStopping(monitor='val_loss', patience=5)
-    tuner2.search(x_train,y_train, epochs=50, validation_split=0.2, callbacks=[stop_early])
+    stop_early = tf.keras.callbacks.EarlyStopping(monitor='val_loss', patience=10)
+    tuner2.search(x_train,y_train, epochs=200, validation_data=(x_val,y_val), callbacks=[stop_early])
     
     best_hps = tuner2.get_best_hyperparameters(1)[0]
     model = tuner2.hypermodel.build(best_hps)
-    report = model.fit(x_train,y_train, epochs=50, validation_data=(x_val,y_val), callbacks=[stop_early])
+    report = model.fit(x_train,y_train, epochs=200, validation_data=(x_val,y_val), callbacks=[stop_early])
     loss = pd.DataFrame(report.history)
     loss.plot()
     plt.show()
+    
     try:
-        os.mkdir(f'tuner_trials/1_layer/best/{folder}')
+        os.mkdir(f'tuner_trials/2_layer/best/{folder}')
     except:
         pass
-    loss.to_csv(f'tuner_trials/1_layer/best/{folder}/loss.csv')
-    model.save(f'tuner_trials/1_layer/best/{folder}/model')
+    loss.to_csv(f'tuner_trials/2_layer/best/{folder}/loss.csv')
+    model.save(f'tuner_trials/2_layer/best/{folder}/model')
     
-    '''
+    os.rename(base_path+folder, f'done/{folder}')
+    
+    
     
     

@@ -160,10 +160,16 @@ cython_debug/
 **/data/raw_global_data/
 **/data/local_data_daily/
 **/01_full_monthly_NN/datasets/
+**/01_full_monthly_NN/done/
+**/01_full_monthly_NN/HPC_fraction/
+
+**/02_full_daily_NN/datasets/
+**/02_full_daily_NN/datasets_no_SD/
+**/02_full_daily_NN/done/
+**/02_full_daily_NN/tuner_trials/
 
 #VScode
 .vscode/
 
-#specific
 
 

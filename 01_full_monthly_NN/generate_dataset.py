@@ -27,7 +27,7 @@ local_base_path = '../data/local_data/'
 global_base_path = '../data/raw_global_data/lead_1_presaved/'
 signal_base_path = '../data/climate_signals/'
 
-local_vars = ['MER','MSSHF','RH','SD','SH','t2m','TCC','TCWV','tp','UW','VW']
+local_vars = ['MER','MSSHF','RH','SH','t2m','TCC','TCWV','tp','UW','VW']
 global_vars = ['MSLP','SST','Z500']
 signal_vars = ['EA','SCA','NAO','ENSO']
 
@@ -37,18 +37,21 @@ signal_paths = [signal_base_path+var for var in signal_vars]
 
 paths = local_paths + global_paths + signal_paths
 
+
 combos = []
-for i in range(5,11):
+for i in range(4,8):
     for combination in itertools.combinations(paths,i):
         combos.append(combination)
+        
+
     
-##just to save computation (the combos until 8546 hava already been generated)##       
-combos = combos[11943:]
 ################################################################################
         
 for combo in tqdm(combos, desc='Datasets creation',leave=True):
     #define the generating string
+    ### momentaneamente commentato
     gen_str = '%'.join(combo)
+    #############################
     
     #separate the generating string in 2 generating strings one for local data and one for global data
     local_gen, global_gen = gen2gens(gen_str)
@@ -137,15 +140,15 @@ for combo in tqdm(combos, desc='Datasets creation',leave=True):
     pretty = combo2pretty(gen_str)
     #make the dataset direcotry
     try:
-        os.mkdir(f'datasets/{pretty}')
+        os.mkdir(f'datasets_no_SD_4-7/{pretty}')
     except:
         pass
     #save training set (both inputs and target)
-    x_train_loc.to_csv(f'datasets/{pretty}/x_train_{pretty}')
-    y_train.to_csv(f'datasets/{pretty}/y_train_{pretty}')
+    x_train_loc.to_csv(f'datasets_no_SD_4-7/{pretty}/x_train_{pretty}')
+    y_train.to_csv(f'datasets_no_SD_4-7/{pretty}/y_train_{pretty}')
     #save test set (both inputs and tagret)
-    x_test_loc.to_csv(f'datasets/{pretty}/x_test_{pretty}')
-    y_test.to_csv(f'datasets/{pretty}/y_test_{pretty}')
+    x_test_loc.to_csv(f'datasets_no_SD_4-7/{pretty}/x_test_{pretty}')
+    y_test.to_csv(f'datasets_no_SD_4-7/{pretty}/y_test_{pretty}')
     
     
     '''

@@ -144,8 +144,8 @@ while pearson[0][1] < 0.80:
         plt.ylim(0,150)
         plt.show()
         
-        #np.save(f'/Users/francesco/Desktop/Università/Magistrale/Matricola/II_anno/Semestre_II/CLINT_project/Tesi/presentation/presentation_2/plot/data_LOO/{month}_true', true)
-        #np.save(f'/Users/francesco/Desktop/Università/Magistrale/Matricola/II_anno/Semestre_II/CLINT_project/Tesi/presentation/presentation_2/plot/data_LOO/{month}_predicted', predicted)
+        np.save(f'/Users/francesco/Desktop/Università/Magistrale/Matricola/II_anno/Semestre_II/CLINT_project/Tesi/presentation/presentation_2/plot/data_LOO/{month}_true', true)
+        np.save(f'/Users/francesco/Desktop/Università/Magistrale/Matricola/II_anno/Semestre_II/CLINT_project/Tesi/presentation/presentation_2/plot/data_LOO/{month}_predicted', predicted)
 
         tot_true_elm = tot_true_elm + true
         tot_hat_elm = tot_hat_elm + predicted

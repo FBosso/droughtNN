@@ -24,9 +24,9 @@ min_corr = 0.0
 
 
 local_base_path = '../data/local_data_daily/'
-global_base_path = '../data/raw_global_data/'
+global_base_path = '../data/raw_global_data/lead_30_presaved/'
 
-local_vars = ['MER','MSSHF','RH','SD','SH','t2m','TCC','TCWV','tp','UW','VW']
+local_vars = ['MER','MSSHF','RH','SH','t2m','TCC','TCWV','tp','UW','VW']
 global_vars = ['MSLP','SST','Z500']
 
 local_paths = [local_base_path+var for var in local_vars]
@@ -35,17 +35,16 @@ global_paths = [global_base_path+var for var in global_vars]
 paths = local_paths + global_paths
 
 combos = []
-for i in range(5,11):
+for i in range(5,9):
     for combination in itertools.combinations(paths,i):
         combos.append(combination)
+
+## BECAUSE OF EARLY STOP ##
+#combos = [('../data/local_data_daily/SD','../data/local_data_daily/MER', '../data/local_data_daily/MSSHF', '../data/local_data_daily/RH', '../data/local_data_daily/SH', '../data/local_data_daily/t2m', '../data/local_data_daily/TCC', '../data/local_data_daily/TCWV', '../data/local_data_daily/tp', '../data/local_data_daily/UW', '../data/local_data_daily/VW', '../data/raw_global_data/lead_30_presaved/MSLP', '../data/raw_global_data/lead_30_presaved/SST', '../data/raw_global_data/lead_30_presaved/Z500')]
+###########################
         
 for combo in tqdm(combos, desc='Datasets creation',leave=True):
-    
-    combo = ('../data/local_data_daily/MER',
-     '../data/local_data_daily/MSSHF',
-     '../data/local_data_daily/RH',
-     '../data/local_data_daily/SD',
-     '../data/raw_global_data/MSLP')
+
     
     #define the generating string
     gen_str = '%'.join(combo)
@@ -65,20 +64,21 @@ for combo in tqdm(combos, desc='Datasets creation',leave=True):
     limit = round(len(inp_loc_data)*percentage_train)
     
     #randomly divide training and testing data (to avoid to keep sequences)
-    x_train_loc, y_train, x_test_loc, y_test, train_boolean_labels = random_split(inp_loc_data, target, limit, even_test=True)
+    x_train_loc, y_train, x_test_loc, y_test, train_boolean_labels = random_split(inp_loc_data, target, limit, even_test=True, temp_res = 'moving_monthly_avg')
     test_boolean_labels = np.array([not item for item in train_boolean_labels])
     
     if global_gen != '':
         for item in global_gen.split('%'):
             #detect variable name
             name = item.split('/')[-1]
-            
+            '''
             #################### 1) online data processing ####################
             #generate the global dataset (gridded data)
-            var = global_timeseries_from_folder_full(item,startyr,endyr,lead=30)
+            adjusted_var, original_dataset = global_timeseries_from_folder_full(item,startyr,endyr,lead=30, temp_res = 'moving_monthly_avg')
             
             #adjust the global data (no normalization because it will be done on the PC1)
-            adjusted_var, original_dataset = adjust_global_data(var, subtract_mean=True)
+            # VARIABILE DA AGGIUSTARE PRIMA DI FARE LA MEDIA MOBILE
+            #adjusted_var, original_dataset = adjust_global_data(var, subtract_mean=True)
             #split training and testing (both for GLOBAL and LOCAL)
             ###################################################################
             '''
@@ -88,7 +88,7 @@ for combo in tqdm(combos, desc='Datasets creation',leave=True):
             name = list(adjusted_var.keys())[0]
             adjusted_var = adjusted_var[name]
             ###################################################################
-            '''
+            
             ###### GLOBA DATA ######
             x_train_glob = adjusted_var.data[train_boolean_labels,:,:]
             x_test_glob = adjusted_var.data[test_boolean_labels,:,:]
