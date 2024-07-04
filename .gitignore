@@ -157,16 +157,10 @@ dmypy.json
 cython_debug/
 
 # Specific project constraints
-**/data/raw_global_data/
-**/data/local_data_daily/
-**/01_full_monthly_NN/datasets/
-**/01_full_monthly_NN/done/
-**/01_full_monthly_NN/HPC_fraction/
-
-**/02_full_daily_NN/datasets/
-**/02_full_daily_NN/datasets_no_SD/
-**/02_full_daily_NN/done/
-**/02_full_daily_NN/tuner_trials/
+data/
+00_monthly_ELMs/1-generate_datasets_&_hyperparameters_tuning/features_permutation_scores
+00_monthly_ELMs/1-generate_datasets_&_hyperparameters_tuning/features_permutation_predictions
+00_monthly_ELMs/1-generate_datasets_&_hyperparameters_tuning/features_permutation_models
 
 #VScode
 .vscode/
