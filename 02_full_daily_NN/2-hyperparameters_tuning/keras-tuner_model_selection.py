@@ -13,6 +13,7 @@ import os
 import matplotlib.pyplot as plt
 import numpy as np
 from function_full import normalize_dataset, training_based_normalization
+import shutil
 
 
 
@@ -30,10 +31,10 @@ except:
 for folder in folders:
     
     #load the training set and the target
-    train_x = pd.read_csv(base_path+folder+f'/x_train_{folder}', index_col=0)
-    train_y = pd.read_csv(base_path+folder+f'/y_train_{folder}', index_col=0)
+    train_x = pd.read_csv(base_path+folder+f'/x_train_{folder}.csv', index_col=0)
+    train_y = pd.read_csv(base_path+folder+f'/y_train_{folder}.csv', index_col=0)
     #drop "month" column from x dataset
-    train_x = train_x.drop(columns=['beginning_month', 'beginning_day'])
+    train_x = train_x.drop(columns=['beginning_month', 'beginning_day', 'beginning_year'])
     #concatenate input and targets to allow coherent shuffilng
     data = pd.concat([train_x,train_y], axis=1)
     #shuffle training set
@@ -104,6 +105,12 @@ for folder in folders:
     loss.to_csv(f'tuner_trials/best_hyperparams/{folder}/loss.csv')
     model.save(f'tuner_trials/best_hyperparams/{folder}/model')
     
+    try:
+        #delete folder in the new location if it already exists
+        shutil.rmtree(f'tuned_datasets/{folder}')
+    except:
+        pass
+    #move the folder from generated_datasets to tuned_datasets
     os.rename(base_path+folder, f'tuned_datasets/{folder}')
     
     

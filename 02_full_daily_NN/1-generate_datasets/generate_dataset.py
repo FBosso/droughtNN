@@ -67,9 +67,9 @@ for combo in tqdm(combos, desc='Datasets creation',leave=True):
     limit = round(len(inp_loc_data)*percentage_train)
     
     #randomly divide training and testing data (to avoid to keep sequences)
-    #x_train_loc, y_train, x_test_loc, y_test, train_boolean_labels = random_split(inp_loc_data, target, limit, even_test=True, temp_res = 'moving_monthly_avg')
+    x_train_loc, y_train, x_test_loc, y_test, train_boolean_labels = random_split(inp_loc_data, target, limit, even_test=True, temp_res = 'moving_monthly_avg')
     
-    x_train_loc, y_train, x_test_loc, y_test, train_boolean_labels = sequential_split(inp_loc_data, target, limit, even_test=True, temp_res = 'moving_monthly_avg')
+    #x_train_loc, y_train, x_test_loc, y_test, train_boolean_labels = sequential_split(inp_loc_data, target, limit, even_test=True, temp_res = 'moving_monthly_avg')
     
     test_boolean_labels = np.array([not item for item in train_boolean_labels])
     
@@ -126,11 +126,11 @@ try:
 except:
     pass
 #save training set (both inputs and target)
-x_train_loc.to_csv(f'{storing_folder}/{pretty}/x_train_{pretty}')
-y_train.to_csv(f'{storing_folder}/{pretty}/y_train_{pretty}')
+x_train_loc.to_csv(f'{storing_folder}/{pretty}/x_train_{pretty}.csv')
+y_train.to_csv(f'{storing_folder}/{pretty}/y_train_{pretty}.csv')
 #save test set (both inputs and tagret)
-x_test_loc.to_csv(f'{storing_folder}/{pretty}/x_test_{pretty}')
-y_test.to_csv(f'{storing_folder}/{pretty}/y_test_{pretty}')
+x_test_loc.to_csv(f'{storing_folder}/{pretty}/x_test_{pretty}.csv')
+y_test.to_csv(f'{storing_folder}/{pretty}/y_test_{pretty}.csv')
 
 
 

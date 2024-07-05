@@ -1,0 +1,13 @@
+,dataset,mse,neuron,activation
+1,TCWV-tp-SCA_SST-1_tp-1_dataset.csv-EA_Z500-2_tp-1_dataset.csv,341.7757927270081,6,sigm
+2,SD-tp-ENSO-mei_MSLP-3_tp-2_dataset.csv-SCA_SST-3_tp-2_dataset.csv,203.01422792031505,9,sigm
+3,tp-SCA_SST-1_tp-3_dataset.csv-NAO_MSLP-1_tp-3_dataset.csv,350.4115125762985,8,sigm
+4,MER-VW-NAO_MSLP-1_tp-4_dataset.csv-NAO_SST-1_tp-4_dataset.csv,240.7903150231911,7,sigm
+5,SH-UW-EA_Z500-2_tp-5_dataset.csv-ENSO-mei_Z500-1_tp-5_dataset.csv,305.35811671224536,10,sigm
+6,MER-RH-NAO_Z500-1_tp-6_dataset.csv-EA_MSLP-2_tp-6_dataset.csv,264.916347135743,6,sigm
+7,SD-t2m-NAO_SST-1_tp-7_dataset.csv-NAO_Z500-1_tp-7_dataset.csv,561.6229193853202,10,sigm
+8,NAO_MSLP-1_tp-8_dataset.csv-SCA_MSLP-2_tp-8_dataset.csv,335.86552132475254,10,sigm
+9,SD-TCWV-EA_Z500-2_tp-9_dataset.csv-NAO_Z500-1_tp-9_dataset.csv,332.7184620293699,4,sigm
+10,SD-UW-EA_MSLP-1_tp-10_dataset.csv-ENSO-mei_SST-1_tp-10_dataset.csv,289.8602931993345,7,sigm
+11,tp-UW-SCA_Z500-2_tp-11_dataset.csv-EA_SST-1_tp-11_dataset.csv,195.83712861067767,9,sigm
+12,MSSHF-UW-EA_MSLP-3_tp-12_dataset.csv-ENSO-mei_MSLP-1_tp-12_dataset.csv,237.74215989227895,11,relu

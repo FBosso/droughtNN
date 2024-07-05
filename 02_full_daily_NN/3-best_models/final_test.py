@@ -15,15 +15,15 @@ import matplotlib.pyplot as plt
 
 #needed paths
 models_path = '../2-hyperparameters_tuning/tuner_trials/best_hyperparams'
-dataset_name = 'MSSHF-SH-t2m-TCC-tp-UW-VW-MSLP-Z500'
+dataset_name = 'MSLP-Z500-MSSHF-SH-t2m-TCC-tp-UW-VW'
 testing_data_path = 'best_data'
 
 #load model
 model = tf.keras.models.load_model(f'{models_path}/{dataset_name}/model')
 
 #load testing data
-x_test = pd.read_csv(f'{testing_data_path}/{dataset_name}/x_test_{dataset_name}', index_col = 0)
-y_test = pd.read_csv(f'{testing_data_path}/{dataset_name}/y_test_{dataset_name}', index_col = 0)
+x_test = pd.read_csv(f'{testing_data_path}/{dataset_name}/x_test_{dataset_name}.csv', index_col = 0)
+y_test = pd.read_csv(f'{testing_data_path}/{dataset_name}/y_test_{dataset_name}.csv', index_col = 0)
 
 #load normalization parameters
 means = np.load(f'{testing_data_path}/{dataset_name}/means_{dataset_name}.npy')
@@ -33,7 +33,7 @@ stds = np.load(f'{testing_data_path}/{dataset_name}/stds_{dataset_name}.npy')
 ########## prepare TESTING DATA FOR THE ENTIRE PERIOD ##########
 
 #remove unwanted labels form x
-entire_x_test = x_test.drop(['beginning_day','beginning_month'],axis=1)
+entire_x_test = x_test.drop(['beginning_day','beginning_month','beginning_year'],axis=1)
 entire_y_test = y_test
 
 #convert testing data into arrays
@@ -47,12 +47,16 @@ entire_x_test_norm = params_based_normalization(entire_x_test_array, means, stds
 ########## prepare TESTING DATA MONTH BY MONTH ##########
 x_y_test_concat = pd.concat([x_test,y_test], axis=1)
 monthly_test = []
+year_lists = []
 for i in range(1,13):
     #select only the training data based on the "pure" month data (average compued only from data of that month)
     test_month_i = x_y_test_concat.loc[(x_test['beginning_day'] == 1) & (x_test['beginning_month'] == i)]
     
+    #save the year column for later
+    year_lists.append(test_month_i['beginning_year'].values)
+    
     #remove unwanted labels
-    test_month_i = test_month_i.drop(['beginning_day','beginning_month'], axis = 1)
+    test_month_i = test_month_i.drop(['beginning_day','beginning_month','beginning_year'], axis = 1)
     
     #split training and testing
     month_i_x_test = test_month_i.drop(['target'], axis = 1)
@@ -68,6 +72,7 @@ for i in range(1,13):
     
     #append the tuple of the month i to the list
     monthly_test.append([month_i_x_test_norm,month_i_y_test_array])
+    
     
     
 ########## TESTING ##########
@@ -113,7 +118,7 @@ plt.ylabel('MSE')
 #set title
 plt.title('Test MSE: global and by month')
 #set y limit for plot
-plt.ylim(0,1000)
+plt.ylim(0,1100)
 #
 
 #save figure
@@ -158,7 +163,7 @@ fig.supxlabel('                    Predicted precipitation [mm]')
 fig.supylabel('Observed precipitation [mm]')
 
 i = 0
-for ax, test in zip(axs.flat, monthly_test):
+for ax, test, years in zip(axs.flat, monthly_test, year_lists):
     i += 1
     ax.set_xlim(-5,200)
     ax.set_ylim(-5,200)
@@ -168,7 +173,7 @@ for ax, test in zip(axs.flat, monthly_test):
     ax.scatter(x, test[1], alpha = 0.5)
     
     #save predicted vs tested dataset
-    data = {'prediction':np.round(x.reshape(20),3),'ground_truth':np.round(test[1],3)}
+    data = {'prediction':np.round(x.reshape(20),3),'ground_truth':np.round(test[1],3),'years':years }
     df = pd.DataFrame(data)
     df.to_csv(f'predictionVStruth_datasets/{months_names[i]}.csv', index=False)
     

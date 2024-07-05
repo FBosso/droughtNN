@@ -12,21 +12,36 @@ import pandas as pd
 import numpy as np
 from function_full import params_based_normalization
 import matplotlib.pyplot as plt
+import shutil
+import os
+ 
+
 
 #needed paths
 models_path = '../2-hyperparameters_tuning/tuner_trials/best_hyperparams'
-dataset_name = 'MSSHF-SH-t2m-TCC-tp-UW-VW-MSLP-Z500'
+dataset_name = 'MSLP-Z500-MSSHF-SH-t2m-TCC-tp-UW-VW'
 testing_data_path = 'best_data'
+
+# path to source directory
+src_dir = f'../2-hyperparameters_tuning/tuned_datasets/{dataset_name}'
+# path to destination directory
+dest_dir = f'best_data/{dataset_name}'
+# getting all the files in the source directory
+files = os.listdir(src_dir)
+try:
+    shutil.copytree(src_dir, dest_dir)
+except:
+    pass
 
 #load model
 model = tf.keras.models.load_model(f'{models_path}/{dataset_name}/model')
 
 #load testing data
-x_train = pd.read_csv(f'{testing_data_path}/{dataset_name}/x_train_{dataset_name}', index_col = 0)
-y_train = pd.read_csv(f'{testing_data_path}/{dataset_name}/y_train_{dataset_name}', index_col = 0)
+x_train = pd.read_csv(f'{testing_data_path}/{dataset_name}/x_train_{dataset_name}.csv', index_col = 0)
+y_train = pd.read_csv(f'{testing_data_path}/{dataset_name}/y_train_{dataset_name}.csv', index_col = 0)
 
-x_test = pd.read_csv(f'{testing_data_path}/{dataset_name}/x_test_{dataset_name}', index_col = 0)
-y_test = pd.read_csv(f'{testing_data_path}/{dataset_name}/y_test_{dataset_name}', index_col = 0)
+x_test = pd.read_csv(f'{testing_data_path}/{dataset_name}/x_test_{dataset_name}.csv', index_col = 0)
+y_test = pd.read_csv(f'{testing_data_path}/{dataset_name}/y_test_{dataset_name}.csv', index_col = 0)
 
 #load normalization parameters
 means = np.load(f'{testing_data_path}/{dataset_name}/means_{dataset_name}.npy')
@@ -36,10 +51,10 @@ stds = np.load(f'{testing_data_path}/{dataset_name}/stds_{dataset_name}.npy')
 ########## prepare TESTING DATA FOR THE ENTIRE PERIOD ##########
 
 #remove unwanted labels form x
-entire_x_train = x_train.drop(['beginning_day','beginning_month'],axis=1)
+entire_x_train = x_train.drop(['beginning_day','beginning_month','beginning_year'],axis=1)
 entire_y_train = y_train
 
-entire_x_test = x_test.drop(['beginning_day','beginning_month'],axis=1)
+entire_x_test = x_test.drop(['beginning_day','beginning_month','beginning_year'],axis=1)
 entire_y_test = y_test
 
 #convert testing data into arrays
@@ -62,10 +77,14 @@ test_predictions = model.predict(entire_x_test_norm)
 test_true = entire_y_test_array
 
 #generate and save dfs
-df_train_Ys = pd.DataFrame({'true':train_true.squeeze(),
+df_train_Ys = pd.DataFrame({'year_input':x_train['beginning_year'].values,
+                            'month_input':x_train['beginning_month'].values,
+                            'true':train_true.squeeze(),
                             'prediction':train_predictions.squeeze()})
 
-df_test_Ys = pd.DataFrame({'true':test_true.squeeze(),
+df_test_Ys = pd.DataFrame({'year_input':x_test['beginning_year'].values,
+                           'month_input':x_test['beginning_month'].values,
+                           'true':test_true.squeeze(),
                            'prediction':test_predictions.squeeze()})
 
 df_train_Ys.to_csv('best_predictions/df_train_Ys.csv')

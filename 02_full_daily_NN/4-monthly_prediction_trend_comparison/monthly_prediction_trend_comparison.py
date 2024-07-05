@@ -10,7 +10,7 @@ import os
 import tensorflow as tf
 import pandas as pd
 import numpy as np
-from function_full import params_based_normalization
+from function_full import params_based_normalization, save_trend_comparison
 import matplotlib.pyplot as plt
 
 
@@ -64,7 +64,7 @@ for i,file in enumerate(files):
     startyr = int(file.split('_')[-1].split('.')[0].split('-')[0])
     endyr = int(file.split('_')[-1].split('.')[0].split('-')[1])
     true_years = np.array([i for i in range(startyr,endyr+1)])
-    #delect the list of true values, predicted values, and years for the specific month
+    #detect the list of true values, predicted values, and years for the specific month
     
     i = i+1
     
@@ -110,60 +110,59 @@ for i,file in enumerate(files):
     
     hat = model.predict(samples_norm)
     
-    #June (6 because index starts from 0 but is incremented by 1)
-    if i == 6:
-        np.save('../../tot_trend_comparison/June/FFNN',hat)
-        np.save('../../tot_trend_comparison/June/years',true_years)
-        np.save('../../tot_trend_comparison/June/ECMWF',ECMWF)
-        np.save('../../tot_trend_comparison/June/true',true)
-        
-    #July (7 because index starts from 0 but is incremented by 1)
-    elif i == 7:
-        np.save('../../tot_trend_comparison/July/FFNN',hat)
-        np.save('../../tot_trend_comparison/July/years',true_years)
-        np.save('../../tot_trend_comparison/July/ECMWF',ECMWF)
-        np.save('../../tot_trend_comparison/July/true',true)
+    #save the data to produce the plot of each month into a prefixed folder (check function to know more)
+    save_trend_comparison(i,hat,true,ECMWF,true_years)
     
     
-    if (i == 6) or (i == 7):
-        
-        month_dict = {
-            6:'June',
-            7:'July'
-            }
-       
-        np.save(f'targets/real_ECMWF_target_{i}', true)
+    ### Plot data and save real ECMWF targets    
+    #month dict to translate numbers into names
+    month_dict = {
+        1:'January',
+        2:'February',
+        3:'March',
+        4:'April',
+        5:'May',
+        6:'June',
+        7:'July',
+        8:'August',
+        9:'September',
+        10:'October',
+        11:'November',
+        12:'December'
+        }
+   
+    np.save(f'targets/real_ECMWF_target_{i}', true)
  
-        plt.figure(figsize=(12,6))
-         
-        plt.ylim(0,180)
-         
-        plt.xlabel(f'Year (month={month_dict[i]})')
-        plt.ylabel('Cumulative precipitation [mm]')
-         
-        plt.xticks(true_years)
-         
-        from scipy.interpolate import make_interp_spline
-         
-        X_Y_Spline_true = make_interp_spline(true_years,true)
-        X_Y_Spline_elm = make_interp_spline(true_years,hat)
-        X_Y_Spline_ECMWF = make_interp_spline(true_years,ECMWF)
-         
-        X_true = np.linspace(true_years.min(), true_years.max(), 20)
-        Y_true = X_Y_Spline_true(X_true)
-         
-        X_elm = np.linspace(true_years.min(), true_years.max(), 20)
-        Y_elm = X_Y_Spline_elm(X_elm)
-         
-        X_ECMWF = np.linspace(true_years.min(), true_years.max(), 20)
-        Y_ECMWF = X_Y_Spline_ECMWF(X_ECMWF)
-         
-        plt.plot(X_true,Y_true, label='Obseration', c='black', marker='*')
-        plt.plot(X_elm,Y_elm, label='Yearly ML Prediction', c='green')
-        plt.plot(X_ECMWF,Y_ECMWF, label='ECMWF Prediction', c='purple')
-        plt.legend(loc="upper left")
-        plt.ylim(0,180)
-        plt.savefig(f'plots/{i}_trueVSelmVSecmwf.pdf')
-        plt.show()
+    plt.figure(figsize=(12,6))
+     
+    plt.ylim(0,180)
+     
+    plt.xlabel(f'Year (month={month_dict[i]})')
+    plt.ylabel('Cumulative precipitation [mm]')
+     
+    plt.xticks(true_years)
+     
+    from scipy.interpolate import make_interp_spline
+     
+    X_Y_Spline_true = make_interp_spline(true_years,true)
+    X_Y_Spline_elm = make_interp_spline(true_years,hat)
+    X_Y_Spline_ECMWF = make_interp_spline(true_years,ECMWF)
+     
+    X_true = np.linspace(true_years.min(), true_years.max(), 20)
+    Y_true = X_Y_Spline_true(X_true)
+     
+    X_elm = np.linspace(true_years.min(), true_years.max(), 20)
+    Y_elm = X_Y_Spline_elm(X_elm)
+     
+    X_ECMWF = np.linspace(true_years.min(), true_years.max(), 20)
+    Y_ECMWF = X_Y_Spline_ECMWF(X_ECMWF)
+     
+    plt.plot(X_true,Y_true, label='Obseration', c='black', marker='*')
+    plt.plot(X_elm,Y_elm, label='Yearly ML Prediction', c='green')
+    plt.plot(X_ECMWF,Y_ECMWF, label='ECMWF Prediction', c='purple')
+    plt.legend(loc="upper left")
+    plt.ylim(0,180)
+    plt.savefig(f'plots/{i}_trueVSelmVSecmwf.pdf')
+    plt.show()
             
         

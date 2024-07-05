@@ -89,10 +89,10 @@ def timeseries_from_folder_full(path,startyr,endyr,i=1,target=False,month_label=
                 
                 if month_label == True and i==0:
                     #extraxt the month of the sample from the filename (needed to test month by month)
-
+                    year = file.split('-')[0]
                     month = file.split('-')[1].split('_')[0]
                     day = file.split('-')[2].split('_')[0]
-                    data.append([day,month,float(np.load(path+'/'+file))])
+                    data.append([day,month,year,float(np.load(path+'/'+file))])
                 else:
                     data.append(float(np.load(path+'/'+file)))
                     
@@ -100,13 +100,14 @@ def timeseries_from_folder_full(path,startyr,endyr,i=1,target=False,month_label=
         if target == False:
             
             if month_label == True and i == 0:
-                df = pd.DataFrame(data,columns=['beginning_day','beginning_month',var_name])
+                df = pd.DataFrame(data,columns=['beginning_day','beginning_month','beginning_year',var_name])
                 #compute the average over a 30 days windows
                 df[var_name] = df[var_name].rolling(30, min_periods=30).mean()
                 #shift day and month columns to match them to the average value computed 
                 #taking as first value of the moving window exactly the one represented by that day and that month
                 df["beginning_day"] = df["beginning_day"].shift(periods=30)
                 df["beginning_month"] = df["beginning_month"].shift(periods=30)
+                df["beginning_year"] = df["beginning_year"].shift(periods=30)
                 #remove NaN values formed by averages computed on a number of values less than 30
             else:
                 df = pd.DataFrame(data,columns=[var_name])
@@ -1004,12 +1005,6 @@ def gen_signals(gen_string):
 
             
 
-#%%
-startyr = 1979
-endyr = 2021
-path = '/Users/francesco/Desktop/NeuralNetworks/data/local_data_daily/tp/'
-target = timeseries_from_folder_full(path, startyr, endyr, target=True, temp_res = "moving_monthly_avg")
-    
     
     
     

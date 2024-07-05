@@ -535,8 +535,8 @@ def save_ELM_LIN_plots(dict_results, dict_results_lin, path):
     #loop over each month to assign predicted and true points to data structure
     for i in range(1,13):
         #save predicted vs tested dataset
-        data_ELM = {'prediction':np.round(dict_results[i][4][1],3),'ground_truth':np.round(dict_results[i][4][0],3)}
-        data_lin = {'prediction':np.round(dict_results_lin[i][2][1],3),'ground_truth':np.round(dict_results_lin[i][2][0],3)}
+        data_ELM = {'prediction':np.round(dict_results[i][4][1],3),'ground_truth':np.round(dict_results[i][4][0],3),'year':np.array(dict_results[i][-1][2])}
+        data_lin = {'prediction':np.round(dict_results_lin[i][2][1],3),'ground_truth':np.round(dict_results_lin[i][2][0],3),'year':np.array(dict_results[i][-1][2])}
         #create dataset with predicted and true points
         df_ELM = pd.DataFrame(data_ELM)
         df_lin = pd.DataFrame(data_lin)

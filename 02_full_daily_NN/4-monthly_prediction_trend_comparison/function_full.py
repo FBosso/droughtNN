@@ -1002,6 +1002,65 @@ def gen_signals(gen_string):
                 
     return sig
 
+
+def save_trend_comparison(month_index,hat,true,ECMWF,true_years):
+    '''
+
+    Parameters
+    ----------
+    month_index : TYPE int
+        DESCRIPTION. index corresponding to the month o the current iteration
+    hat : TYPE array
+        DESCRIPTION. predictions of the model
+    true : TYPE array
+        DESCRIPTION. ture target values
+    ECMWF : TYPE array
+        DESCRIPTION. value according to ECMWF model
+    true_years : TYPE array
+        DESCRIPTION. years of the true observations
+
+    Returns
+    -------
+    None. It saves the data into the prefixed folder
+
+    '''
+    
+    #month dict to translate numbers into names
+    month_dict = {
+        1:'January',
+        2:'February',
+        3:'March',
+        4:'April',
+        5:'May',
+        6:'June',
+        7:'July',
+        8:'August',
+        9:'September',
+        10:'October',
+        11:'November',
+        12:'December'
+        }
+    
+    base_path = '../../tot_trend_comparison'
+    MYDIR = (f"{base_path}/{month_dict[month_index]}")
+    CHECK_FOLDER = os.path.isdir(MYDIR)
+    
+    # If folder doesn't exist, then create it.
+    if not CHECK_FOLDER:
+        os.makedirs(MYDIR)
+        print("created folder : ", MYDIR)
+    else:
+        print(MYDIR, "folder already exists.")
+    
+    #save the vector
+    np.save(f'{base_path}/{month_dict[month_index]}/FFNN',hat)
+    np.save(f'{base_path}/{month_dict[month_index]}/years',true_years)
+    np.save(f'{base_path}/{month_dict[month_index]}/ECMWF',ECMWF)
+    np.save(f'{base_path}/{month_dict[month_index]}/true',true)
+
+
+
+    
             
     
     
