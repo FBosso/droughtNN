@@ -162,6 +162,21 @@ monthly_elm/results/
 daily_nn/results/
 results/
 
+# Binary / heavy ML artifacts (defense-in-depth: catch these anywhere in the tree)
+*.npy
+*.pkl
+*.h5
+*.hdf5
+*.keras
+*.pb
+*.ckpt
+*.ckpt.index
+*.ckpt.data-*
+*.data-00000-of-00001
+
+# Allow reference .npy files explicitly checked into source (ECMWF benchmark targets)
+!monthly_elm/reference_data/**
+
 #VScode
 .vscode/
 
