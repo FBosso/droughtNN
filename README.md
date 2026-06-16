@@ -53,3 +53,22 @@ comparison data is written to the top-level `results/tot_trend_comparison/`.
   (`docs/figures/`), the model-comparison spreadsheet
   (`docs/model_comparison.xlsx`), and archived legacy test tables
   (`docs/legacy_test_tables/`).
+
+## License
+
+This project is licensed under the [Creative Commons Attribution 4.0 International (CC BY 4.0)](LICENSE).
+You are free to use, modify, and redistribute this code for any purpose, including commercially, as long as you give appropriate credit to the original work.
+
+## Citation
+
+If you use this code in your research, please cite it using the metadata in [`CITATION.cff`](CITATION.cff), or use the "Cite this repository" button on GitHub.
+
+```bibtex
+@software{bosso2026droughtnn,
+  author    = {Bosso, Francesco},
+  title     = {droughtNN: Subseasonal drought forecasting with Extreme Learning Machines},
+  year      = {2026},
+  url       = {https://github.com/FBosso/droughtNN},
+  license   = {CC-BY-4.0}
+}
+```
