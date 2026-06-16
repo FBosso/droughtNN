@@ -158,12 +158,15 @@ cython_debug/
 
 # Specific project constraints
 data/
-00_monthly_ELMs/1-generate_datasets_&_hyperparameters_tuning/features_permutation_scores
-00_monthly_ELMs/1-generate_datasets_&_hyperparameters_tuning/features_permutation_predictions
-00_monthly_ELMs/1-generate_datasets_&_hyperparameters_tuning/features_permutation_models
+monthly_elm/results/
+daily_nn/results/
+results/
 
 #VScode
 .vscode/
+
+# Claude Code
+CLAUDE.md
 
 
 

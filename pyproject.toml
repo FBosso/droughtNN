@@ -1,0 +1,19 @@
+[project]
+name = "droughtnn"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+requires-python = "==3.11.15"
+dependencies = [
+    "dask[distributed]>=2026.6.0",
+    "keras-tuner>=1.4.8",
+    "matplotlib>=3.11.0",
+    "pandas>=3.0.3",
+    "pyarrow>=24.0.0",
+    "scikit-elm>=0.21a0",
+    "scikit-learn>=1.9.0",
+    "scipy>=1.17.1",
+    "tensorflow>=2.21.0",
+    "tqdm>=4.68.2",
+    "xarray>=2026.4.0",
+]
