@@ -1,0 +1,16 @@
+cff-version: 1.2.0
+message: "If you use this software, please cite it as below."
+type: software
+title: "droughtNN: Subseasonal drought forecasting with Extreme Learning Machines"
+authors:
+  - family-names: Bosso
+    given-names: Francesco
+    email: francesco_bosso@outlook.com
+repository-code: "https://github.com/FBosso/droughtNN"
+license: CC-BY-4.0
+date-released: 2026-06-16
+abstract: >
+  Research code for subseasonal/monthly drought (precipitation) forecasting
+  using machine learning (Extreme Learning Machines, Keras neural networks,
+  and linear regression baselines), benchmarked against ECMWF subseasonal
+  forecasts.
