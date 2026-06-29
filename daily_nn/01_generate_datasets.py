@@ -41,7 +41,7 @@ global_paths = [str(config.RAW_GLOBAL_DATA_DIR / var) for var in config.GLOBAL_V
 paths = global_paths + local_paths
 
 combos = []
-for i in range(3, 10):
+for i in range(4, 10):
     for combination in itertools.combinations(paths, i):
         combos.append(combination)
 
