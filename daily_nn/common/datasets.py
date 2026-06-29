@@ -142,11 +142,8 @@ def global_timeseries_from_folder_full(path, startyr, endyr, lead=1, temp_res='m
     if temp_res == 'monthly':
         files = os.listdir(path)
         files.sort()
+        files = [f for f in files if not f.startswith('.')]
         del files[-lead]
-        try:
-            files.remove('.DS_Store')
-        except ValueError:
-            pass
         avg_items = []
         for file in files:
             if (int(file.split('-')[0]) >= startyr) and (int(file.split('-')[0]) <= endyr):
@@ -161,11 +158,8 @@ def global_timeseries_from_folder_full(path, startyr, endyr, lead=1, temp_res='m
 
         files = os.listdir(path)
         files.sort()
+        files = [f for f in files if not f.startswith('.')]
         # del files[-lead]
-        try:
-            files.remove('.DS_Store')
-        except ValueError:
-            pass
         items = []
         for file in files:
             if (int(file.split('-')[0]) >= startyr) and (int(file.split('-')[0]) <= endyr):
@@ -176,12 +170,8 @@ def global_timeseries_from_folder_full(path, startyr, endyr, lead=1, temp_res='m
         new_data = data.where(data.time != data.time[-1], drop=True)
         # Adjust global data (transform and center with respect to the mean)
         new_data, original_dataset = adjust_global_data(new_data, subtract_mean=True)
-        # replace NaN values with -99999 (or rolling does not work)
-        new_data = new_data.fillna(-99999)
-        # apply the moving average 30 days window
-        moving_window_avg = new_data.rolling(time=30, min_periods=30).mean(dim='time').dropna("time")
-        # replace -99999 with np.nan again (or land masking will not work)
-        moving_window_avg = moving_window_avg.where(moving_window_avg != -99999)
+        # apply the moving average 30 days window; drop the first 29 incomplete windows
+        moving_window_avg = new_data.rolling(time=30, min_periods=30).mean().isel(time=slice(29, None))
 
         # var = list(moving_window_avg.keys())[0]
         true_array = [True for i in range(len(moving_window_avg) - lead)]
@@ -217,11 +207,7 @@ def adjust_global_data(variable, subtract_mean=False):
         # geopotential that is in hPa)
         fieldData = fieldData / 100
     if subtract_mean == True:
-        # subtract mean pixel by pixel (over the time dimension) to find the anomalies
-        for i in range(fieldData.shape[1]):
-            for j in range(fieldData.shape[2]):
-                fieldData[:, i, j] = fieldData[:, i, j] - fieldData[:, i, j].mean()
-
+        fieldData = fieldData - fieldData.mean(dim='time')
     return fieldData, variable
 
 
