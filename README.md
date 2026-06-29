@@ -17,11 +17,16 @@ Both pipelines are organized as a sequence of numbered stage scripts
 (`01_...py`, `02_...py`, ...) that share a `common/` package (path
 configuration in `common/config.py`, plus dataset/model/plotting helpers).
 Stage scripts resolve all paths through `common/config.py`, so they should be
-run from the repository root, e.g.:
+run from the repository root. The `daily_nn` pipeline has an optional stage 0
+that precomputes the processed global fields (MSLP, Z500) once and caches them
+to disk; stage 01 then loads those cached files instead of reprocessing all raw
+NetCDF data for every feature combination (avoids repeated heavy I/O and OOM on
+large combo sweeps):
 
 ```bash
-uv run python monthly_elm/01_generate_datasets_and_tune.py
+uv run python daily_nn/00_precompute_global_data.py   # run once, or on new data
 uv run python daily_nn/01_generate_datasets.py
+uv run python monthly_elm/01_generate_datasets_and_tune.py
 ```
 
 ## Installation
