@@ -18,7 +18,6 @@ from common import config
 from common.combo_utils import combo2pretty, gen2gens
 from common.datasets import (
     generate_full_dataset,
-    global_timeseries_from_folder_full,
     global_local_corr,
     filtering_conditions,
     reshape_mask2PCA,
@@ -29,6 +28,8 @@ from common.datasets import (
 # define starting and ending years of the datasets
 startyr = 1979
 endyr = 2021
+# define lead time in days (must match the value used in 00_precompute_global_data.py)
+lead = 30
 # define training percentage
 percentage_train = 0.8
 # define minimum correlation threshold for filtering condition on global data
@@ -74,14 +75,15 @@ for combo in tqdm(combos, desc='Datasets creation', leave=True):
             name = item.split('/')[-1]
 
             #################### 1) online data processing ####################
-            adjusted_var, original_dataset = global_timeseries_from_folder_full(item, startyr, endyr, lead=30, temp_res='moving_monthly_avg')
+            #adjusted_var, original_dataset = global_timeseries_from_folder_full(item, startyr, endyr, lead=30, temp_res='moving_monthly_avg')
             ###################################################################
 
             #################### 2) exploit presaved data #####################
-            #original_dataset = xr.open_dataset(f'{item}.nc', engine='netcdf4')
-            #adjusted_var = xr.open_dataset(f'{item}_adjusted.nc', engine='netcdf4')
-            #name = list(adjusted_var.keys())[0]
-            #adjusted_var = adjusted_var[name]
+            presaved_dir = config.RAW_GLOBAL_DATA_DIR / f'lead_{lead}_presaved'
+            original_dataset = xr.open_dataset(presaved_dir / f'{name}.nc', engine='netcdf4')
+            adjusted_var = xr.open_dataset(presaved_dir / f'{name}_adjusted.nc', engine='netcdf4')
+            name = list(adjusted_var.keys())[0]
+            adjusted_var = adjusted_var[name]
             ###################################################################
 
             ###### GLOBAL DATA ######
