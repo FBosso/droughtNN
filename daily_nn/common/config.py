@@ -14,11 +14,11 @@ REPO_ROOT = PIPELINE_DIR.parent
 # ---- shared input data ------------------------------------------------
 DATA_DIR = Path("/media/francesco/T7/Personale/NeuralNetworks_BACKUP/data") #REPO_ROOT / "data"
 LOCAL_DATA_DAILY_DIR = DATA_DIR / "local_data_daily"
-RAW_GLOBAL_DATA_DIR = DATA_DIR / "raw_global_data" / "lead_30_presaved"
+RAW_GLOBAL_DATA_DIR = DATA_DIR / "raw_global_data" #/ "lead_30_presaved"
 ECMWF_BENCHMARK_DIR = DATA_DIR / "ECMWF_benchmark"
 
 LOCAL_VARIABLES = ['MSSHF', 'SH', 't2m', 'TCC', 'tp', 'UW', 'VW']
-GLOBAL_VARIABLES = ['MSLP', 'Z500']
+GLOBAL_VARIABLES = ['MSLP', 'Z500', 'SST']
 
 # ---- pipeline outputs ---------------------------------------------------
 RESULTS_DIR = PIPELINE_DIR / "results"
