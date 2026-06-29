@@ -46,10 +46,7 @@ def timeseries_from_folder_full(path, startyr, endyr, i=1, target=False, month_l
 
         files = os.listdir(path)
         files.sort()
-        try:
-            files.remove('.DS_Store')
-        except ValueError:
-            pass
+        files = [f for f in files if not f.startswith('.')]
         data = []
         for file in files:
             if (int(file.split('-')[0]) >= startyr) and (int(file.split('-')[0]) <= endyr):
@@ -78,10 +75,7 @@ def timeseries_from_folder_full(path, startyr, endyr, i=1, target=False, month_l
 
         files = os.listdir(path)
         files.sort()
-        try:
-            files.remove('.DS_Store')
-        except ValueError:
-            pass
+        files = [f for f in files if not f.startswith('.')]
         data = []
         for file in files:
             if (int(file.split('-')[0]) >= startyr) and (int(file.split('-')[0]) <= endyr):

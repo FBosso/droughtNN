@@ -24,6 +24,22 @@ uv run python monthly_elm/01_generate_datasets_and_tune.py
 uv run python daily_nn/01_generate_datasets.py
 ```
 
+## Installation
+
+CPU-only:
+```bash
+uv sync
+```
+
+With NVIDIA GPU (requires CUDA 12 drivers):
+```bash
+uv sync --extra gpu
+```
+
+The `[gpu]` extra installs `nvidia-cudnn-cu12`, the only library missing from a
+standard CUDA 12 toolkit installation. TensorFlow picks it up automatically from
+the virtual environment — no system-level cuDNN installation needed.
+
 ## Data layout
 
 `data/` (gitignored) holds the input datasets shared by both pipelines:

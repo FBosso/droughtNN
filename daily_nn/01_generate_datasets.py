@@ -18,6 +18,7 @@ from common import config
 from common.combo_utils import combo2pretty, gen2gens
 from common.datasets import (
     generate_full_dataset,
+    global_timeseries_from_folder_full,
     global_local_corr,
     filtering_conditions,
     reshape_mask2PCA,
@@ -39,7 +40,7 @@ global_paths = [str(config.RAW_GLOBAL_DATA_DIR / var) for var in config.GLOBAL_V
 paths = global_paths + local_paths
 
 combos = []
-for i in range(9, 10):
+for i in range(3, 10):
     for combination in itertools.combinations(paths, i):
         combos.append(combination)
 
@@ -72,11 +73,16 @@ for combo in tqdm(combos, desc='Datasets creation', leave=True):
             # detect variable name
             name = item.split('/')[-1]
 
-            # exploit presaved data
-            original_dataset = xr.open_dataset(f'{item}.nc', engine='netcdf4')
-            adjusted_var = xr.open_dataset(f'{item}_adjusted.nc', engine='netcdf4')
-            name = list(adjusted_var.keys())[0]
-            adjusted_var = adjusted_var[name]
+            #################### 1) online data processing ####################
+            adjusted_var, original_dataset = global_timeseries_from_folder_full(item, startyr, endyr, lead=30, temp_res='moving_monthly_avg')
+            ###################################################################
+
+            #################### 2) exploit presaved data #####################
+            #original_dataset = xr.open_dataset(f'{item}.nc', engine='netcdf4')
+            #adjusted_var = xr.open_dataset(f'{item}_adjusted.nc', engine='netcdf4')
+            #name = list(adjusted_var.keys())[0]
+            #adjusted_var = adjusted_var[name]
+            ###################################################################
 
             ###### GLOBAL DATA ######
             x_train_glob = adjusted_var.data[train_boolean_labels, :, :]
@@ -102,11 +108,11 @@ for combo in tqdm(combos, desc='Datasets creation', leave=True):
     # create the dataset ID
     pretty = combo2pretty(gen_str)
 
-dataset_dir = config.GENERATED_DATASETS_DIR / pretty
-dataset_dir.mkdir(parents=True, exist_ok=True)
-# save training set (both inputs and target)
-x_train_loc.to_csv(dataset_dir / f'x_train_{pretty}.csv')
-y_train.to_csv(dataset_dir / f'y_train_{pretty}.csv')
-# save test set (both inputs and target)
-x_test_loc.to_csv(dataset_dir / f'x_test_{pretty}.csv')
-y_test.to_csv(dataset_dir / f'y_test_{pretty}.csv')
+    dataset_dir = config.GENERATED_DATASETS_DIR / pretty
+    dataset_dir.mkdir(parents=True, exist_ok=True)
+    # save training set (both inputs and target)
+    x_train_loc.to_csv(dataset_dir / f'x_train_{pretty}.csv')
+    y_train.to_csv(dataset_dir / f'y_train_{pretty}.csv')
+    # save test set (both inputs and target)
+    x_test_loc.to_csv(dataset_dir / f'x_test_{pretty}.csv')
+    y_test.to_csv(dataset_dir / f'y_test_{pretty}.csv')

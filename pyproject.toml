@@ -8,6 +8,7 @@ dependencies = [
     "dask[distributed]>=2026.6.0",
     "keras-tuner>=1.4.8",
     "matplotlib>=3.11.0",
+    "netcdf4>=1.7.4",
     "pandas>=3.0.3",
     "pyarrow>=24.0.0",
     "scikit-elm>=0.21a0",
@@ -16,4 +17,9 @@ dependencies = [
     "tensorflow>=2.21.0",
     "tqdm>=4.68.2",
     "xarray>=2026.4.0",
+]
+
+[project.optional-dependencies]
+gpu = [
+    "nvidia-cudnn-cu12>=9.0,<10",
 ]
